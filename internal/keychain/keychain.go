@@ -7,6 +7,6 @@ type Store interface {
 	List(service string) ([]string, error)
 }
 
-func New() Store
+// func New() Store
 
 // Platform constructor

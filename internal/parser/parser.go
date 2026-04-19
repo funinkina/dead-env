@@ -4,14 +4,16 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	env "funinkina/deadenv/internal/envPair"
 )
 
 var keyRegex = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
-func ParseEnvContent(input string) ([]EnvPair, error) {
+func ParseEnvContent(input string) ([]env.EnvPair, error) {
 
 	lines := strings.Split(input, "\n")
-	var output []EnvPair
+	var output []env.EnvPair
 
 	for idx, line := range lines {
 		lineNum := idx + 1
@@ -35,7 +37,7 @@ func ParseEnvContent(input string) ([]EnvPair, error) {
 			return nil, fmt.Errorf("line %d: invalid key: %q", lineNum, key)
 		}
 
-		output = append(output, EnvPair{Key: key, Value: value})
+		output = append(output, env.EnvPair{Key: key, Value: value})
 	}
 
 	return output, nil

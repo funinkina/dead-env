@@ -1,4 +1,4 @@
-package parser
+package env
 
 type EnvPair struct {
 	Key   string

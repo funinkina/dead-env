@@ -1,6 +1,7 @@
 package parser
 
 import (
+	env "funinkina/deadenv/internal/envPair"
 	"reflect"
 	"testing"
 )
@@ -9,38 +10,38 @@ func TestParseEnvContent(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    []EnvPair
+		want    []env.EnvPair
 		wantErr bool
 	}{
 		{
 			name:  "basic",
 			input: "KEY=VALUE",
-			want:  []EnvPair{{"KEY", "VALUE"}},
+			want:  []env.EnvPair{{Key: "KEY", Value: "VALUE"}},
 		},
 		{
 			name:  "spaces",
 			input: "KEY = VALUE",
-			want:  []EnvPair{{"KEY", "VALUE"}},
+			want:  []env.EnvPair{{Key: "KEY", Value: "VALUE"}},
 		},
 		{
 			name:  "export",
 			input: "export KEY=VALUE",
-			want:  []EnvPair{{"KEY", "VALUE"}},
+			want:  []env.EnvPair{{Key: "KEY", Value: "VALUE"}},
 		},
 		{
 			name:  "quoted",
 			input: `KEY="hello world"`,
-			want:  []EnvPair{{"KEY", "hello world"}},
+			want:  []env.EnvPair{{Key: "KEY", Value: "hello world"}},
 		},
 		{
 			name:  "inline comment",
 			input: "KEY=value # comment",
-			want:  []EnvPair{{"KEY", "value"}},
+			want:  []env.EnvPair{{Key: "KEY", Value: "value"}},
 		},
 		{
 			name:  "url hash",
 			input: "KEY=http://test#anchor",
-			want:  []EnvPair{{"KEY", "http://test#anchor"}},
+			want:  []env.EnvPair{{Key: "KEY", Value: "http://test#anchor"}},
 		},
 		{
 			name:    "invalid key",
@@ -51,18 +52,18 @@ func TestParseEnvContent(t *testing.T) {
 			name: "multi-line",
 			input: `
 # comment
-A=1
+	A=1
 B=2
 `,
-			want: []EnvPair{
-				{"A", "1"},
-				{"B", "2"},
+			want: []env.EnvPair{
+				{Key: "A", Value: "1"},
+				{Key: "B", Value: "2"},
 			},
 		},
 		{
 			name:  "skips blank lines and comments",
 			input: "\n# comment\nFOO=bar\n\n  # another comment\nBAR=baz",
-			want: []EnvPair{
+			want: []env.EnvPair{
 				{Key: "FOO", Value: "bar"},
 				{Key: "BAR", Value: "baz"},
 			},
@@ -70,14 +71,17 @@ B=2
 		{
 			name:  "parses keys without explicit values",
 			input: "EMPTY\nNAME first second",
-			want: []EnvPair{
+			want: []env.EnvPair{
 				{Key: "EMPTY", Value: ""},
 				{Key: "NAME", Value: "first second"},
 			},
 		},
 	}
+
 	for _, tt := range tests {
+
 		t.Run(tt.name, func(t *testing.T) {
+
 			got, err := ParseEnvContent(tt.input)
 
 			if (err != nil) != tt.wantErr {
