@@ -4,6 +4,6 @@ import "errors"
 
 var (
 	ErrKeyNotFound    = errors.New("key not found")
-	ErrAuthDenied     = errors.New("authentication denied")
+	ErrAuthDenied     = errors.New("auth denied")
 	ErrNotImplemented = errors.New("keychain backend not implemented")
 )

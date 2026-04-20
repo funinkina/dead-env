@@ -44,23 +44,23 @@ func ParseEnvContent(input string) ([]env.EnvPair, error) {
 }
 
 func splitLine(line string) (string, string, error) {
-
 	if before, after, ok := strings.Cut(line, "="); ok {
 		key := strings.TrimSpace(before)
 		value := parseValue(after)
 		return key, value, nil
 	}
 
-	fields := strings.Fields(line)
-	if len(fields) == 0 {
-		return "", "", nil
+	for idx, r := range line {
+		if r != ' ' && r != '\t' {
+			continue
+		}
+
+		key := strings.TrimSpace(line[:idx])
+		value := parseValue(line[idx+1:])
+		return key, value, nil
 	}
 
-	if len(fields) == 1 {
-		return fields[0], "", nil
-	}
-
-	return fields[0], strings.Join(fields[1:], " "), nil
+	return line, "", nil
 }
 
 func parseValue(val string) string {
@@ -80,10 +80,7 @@ func parseValue(val string) string {
 		content := val[1 : last+1]
 
 		if quote == '"' {
-			content = strings.ReplaceAll(content, `\"`, `"`)
-			content = strings.ReplaceAll(content, `\\`, `\`)
-			content = strings.ReplaceAll(content, `\n`, "\n")
-			content = strings.ReplaceAll(content, `\t`, "\t")
+			content = unescapeDoubleQuoted(content)
 		}
 
 		return content
@@ -99,4 +96,35 @@ func parseValue(val string) string {
 
 func isValidKey(k string) bool {
 	return keyRegex.MatchString(k)
+}
+
+func unescapeDoubleQuoted(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+
+	for i := 0; i < len(s); i++ {
+		if s[i] != '\\' || i+1 >= len(s) {
+			b.WriteByte(s[i])
+			continue
+		}
+
+		switch s[i+1] {
+		case '"':
+			b.WriteByte('"')
+			i++
+		case '\\':
+			b.WriteByte('\\')
+			i++
+		case 'n':
+			b.WriteByte('\n')
+			i++
+		case 't':
+			b.WriteByte('\t')
+			i++
+		default:
+			b.WriteByte(s[i])
+		}
+	}
+
+	return b.String()
 }

@@ -29,7 +29,11 @@ func NewProfileService(
 	}
 
 	if hashValue == nil {
-		hashValue = history.HashValue
+		if _, ok := recorder.(*history.NoopRecorder); ok {
+			hashValue = noopHash
+		} else {
+			hashValue = history.HashValue
+		}
 	}
 	return &ProfileService{
 		store:     store,
@@ -38,13 +42,16 @@ func NewProfileService(
 	}, nil
 }
 
-// helper function
 func getServiceName(profile string) string {
 	return "deadenv/" + profile
 }
 
-func accessPrompt(profile string) string {
+func readPrompt(profile string) string {
 	return fmt.Sprintf(`deadenv wants to access profile "%s"`, profile)
+}
+
+func noopHash(string) (string, error) {
+	return "", nil
 }
 
 func (p *ProfileService) SetKey(profile, key, value string) error {
@@ -86,7 +93,7 @@ func (p *ProfileService) UnsetKey(profile, key string) error {
 
 func (p *ProfileService) GetKey(profile, key string) (string, error) {
 	service := getServiceName(profile)
-	prompt := accessPrompt(profile)
+	prompt := readPrompt(profile)
 	value, err := p.store.Read(service, key, prompt)
 	if err != nil {
 		return "", fmt.Errorf("error reading key: %w", err)
@@ -161,7 +168,7 @@ func (p *ProfileService) Copy(srcProfile, dstProfile string) error {
 	}
 	srcService := getServiceName(srcProfile)
 	dstService := getServiceName(dstProfile)
-	prompt := accessPrompt(srcProfile)
+	prompt := readPrompt(srcProfile)
 	keys, err := p.store.List(srcService)
 	if err != nil {
 		return fmt.Errorf("error listing keys: %w", err)
