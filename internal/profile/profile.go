@@ -1,7 +1,6 @@
 package profile
 
 import (
-	"deadenv/internal/fake_history"
 	"deadenv/internal/history"
 	"deadenv/internal/keychain"
 )
@@ -42,21 +41,20 @@ func getServiceName(profile string) string {
 	return "deadenv/" + profile
 }
 
-func SetKey(profile, key, value string, store keychain.Store) error {
+func (p *ProfileService) SetKey(profile, key, value string) error {
 	service := getServiceName(profile)
-	err := store.Write(service, key, value)
+	err := p.store.Write(service, key, value)
 	if err != nil {
 		return err
 	}
-	hash := hashValue(value)
-	fake_history.Record(profile, "set", key, hash)
+	hash, err := p.hashValue(value)
+	if err != nil {
+		return err
+	}
+	err = p.recorder.Record(profile, "set", key, hash)
+	if err != nil {
+		return err
+	}
 	return nil
 
-}
-
-func hashValue(value string) string {
-	for idx, char := range value {
-		char = char + rune(idx)
-	}
-	return string(value)
 }
