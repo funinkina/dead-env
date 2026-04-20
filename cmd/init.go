@@ -29,6 +29,8 @@ func NewRootCommand() *cli.Command {
 		Commands: []*cli.Command{
 			NewProfileCommand(),
 			NewEditCommand(),
+			NewExportCommand(),
+			NewImportCommand(),
 		},
 	}
 }

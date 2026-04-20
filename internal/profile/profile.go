@@ -5,6 +5,7 @@ import (
 	"funinkina/deadenv/internal/envPair"
 	"funinkina/deadenv/internal/history"
 	"funinkina/deadenv/internal/keychain"
+	"sort"
 )
 
 type HashFunc func(value string) (string, error)
@@ -108,6 +109,66 @@ func (p *ProfileService) ListKeys(profile string) ([]string, error) {
 		return nil, fmt.Errorf("error listing keys: %w", err)
 	}
 	return keys, nil
+}
+
+func (p *ProfileService) GetPairs(profile string) ([]envPair.EnvPair, error) {
+	if profile == "" {
+		return nil, ErrProfileNameEmpty
+	}
+
+	pairs, err := p.loadProfilePairs(profile)
+	if err != nil {
+		return nil, fmt.Errorf("error loading profile pairs: %w", err)
+	}
+
+	return pairs, nil
+}
+
+func (p *ProfileService) ReplaceProfile(profile string, pairs []envPair.EnvPair) error {
+	if profile == "" {
+		return ErrProfileNameEmpty
+	}
+
+	incoming := make(map[string]string, len(pairs))
+	for _, pair := range pairs {
+		if pair.Key == "" {
+			return ErrKeyEmpty
+		}
+		incoming[pair.Key] = pair.Value
+	}
+
+	existingKeys, err := p.ListKeys(profile)
+	if err != nil {
+		return fmt.Errorf("error listing existing keys: %w", err)
+	}
+
+	removeKeys := make([]string, 0)
+	for _, key := range existingKeys {
+		if _, ok := incoming[key]; !ok {
+			removeKeys = append(removeKeys, key)
+		}
+	}
+	sort.Strings(removeKeys)
+
+	for _, key := range removeKeys {
+		if err := p.UnsetKey(profile, key); err != nil {
+			return fmt.Errorf("error unsetting key %q: %w", key, err)
+		}
+	}
+
+	incomingKeys := make([]string, 0, len(incoming))
+	for key := range incoming {
+		incomingKeys = append(incomingKeys, key)
+	}
+	sort.Strings(incomingKeys)
+
+	for _, key := range incomingKeys {
+		if err := p.SetKey(profile, key, incoming[key]); err != nil {
+			return fmt.Errorf("error setting key %q: %w", key, err)
+		}
+	}
+
+	return nil
 }
 
 func (p *ProfileService) Create(profile string, pairs []envPair.EnvPair) error {

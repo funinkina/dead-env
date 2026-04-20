@@ -2,11 +2,77 @@ package tui
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 
 	"funinkina/deadenv/internal/envPair"
 )
+
+func TestPromptHiddenWithReader(t *testing.T) {
+	var out bytes.Buffer
+	calledFD := -1
+
+	got, err := promptHiddenWithReader(&out, "Sharing password", 42, func(fd int) ([]byte, error) {
+		calledFD = fd
+		return []byte("s3cr3t"), nil
+	})
+	if err != nil {
+		t.Fatalf("promptHiddenWithReader() error = %v", err)
+	}
+
+	if got != "s3cr3t" {
+		t.Fatalf("promptHiddenWithReader() = %q, want %q", got, "s3cr3t")
+	}
+
+	if calledFD != 42 {
+		t.Fatalf("fd = %d, want %d", calledFD, 42)
+	}
+
+	if out.String() != "Sharing password: \n" {
+		t.Fatalf("output = %q, want %q", out.String(), "Sharing password: \n")
+	}
+}
+
+func TestPromptHiddenWithReaderDefaultsLabel(t *testing.T) {
+	var out bytes.Buffer
+
+	_, err := promptHiddenWithReader(&out, "   ", 7, func(fd int) ([]byte, error) {
+		_ = fd
+		return []byte("secret"), nil
+	})
+	if err != nil {
+		t.Fatalf("promptHiddenWithReader() error = %v", err)
+	}
+
+	if out.String() != "Password: \n" {
+		t.Fatalf("output = %q, want %q", out.String(), "Password: \n")
+	}
+}
+
+func TestPromptHiddenWithReaderReturnsReaderError(t *testing.T) {
+	var out bytes.Buffer
+	wantErr := errors.New("boom")
+
+	_, err := promptHiddenWithReader(&out, "Password", 1, func(fd int) ([]byte, error) {
+		_ = fd
+		return nil, wantErr
+	})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("promptHiddenWithReader() error = %v, want %v", err, wantErr)
+	}
+
+	if out.String() != "Password: \n" {
+		t.Fatalf("output = %q, want %q", out.String(), "Password: \n")
+	}
+}
+
+func TestPromptHiddenWithReaderRejectsNilReader(t *testing.T) {
+	_, err := promptHiddenWithReader(&bytes.Buffer{}, "Password", 1, nil)
+	if err == nil {
+		t.Fatal("promptHiddenWithReader() error = nil, want non-nil")
+	}
+}
 
 func TestPrintChangeSummaryIncludesCountsAndLabels(t *testing.T) {
 	var out bytes.Buffer

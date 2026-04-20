@@ -9,10 +9,47 @@ import (
 	"strings"
 
 	"funinkina/deadenv/internal/envPair"
+
+	"golang.org/x/term"
 )
+
+type passwordReader func(fd int) ([]byte, error)
 
 func PromptConfirm(message string) (bool, error) {
 	return promptConfirmWithIO(os.Stdin, os.Stdout, message)
+}
+
+func PromptHidden(label string) (string, error) {
+	return promptHiddenWithReader(os.Stdout, label, int(os.Stdin.Fd()), term.ReadPassword)
+}
+
+func promptHiddenWithReader(out io.Writer, label string, fd int, readPassword passwordReader) (string, error) {
+	if readPassword == nil {
+		return "", fmt.Errorf("password reader is nil")
+	}
+
+	if out == nil {
+		out = os.Stdout
+	}
+
+	label = strings.TrimSpace(label)
+	if label == "" {
+		label = "Password"
+	}
+
+	if _, err := fmt.Fprintf(out, "%s: ", label); err != nil {
+		return "", err
+	}
+
+	b, err := readPassword(fd)
+	if _, writeErr := fmt.Fprintln(out); writeErr != nil && err == nil {
+		return "", writeErr
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return string(b), nil
 }
 
 func promptConfirmWithIO(in io.Reader, out io.Writer, message string) (bool, error) {

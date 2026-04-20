@@ -2,6 +2,7 @@ package profile
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"funinkina/deadenv/internal/envPair"
@@ -291,5 +292,133 @@ func TestRenameCopiesDestinationAndDeletesSource(t *testing.T) {
 	}
 	if recorder.Entries[1].Operation != history.OpDeleteProfile {
 		t.Fatalf("second entry operation = %q, want %q", recorder.Entries[1].Operation, history.OpDeleteProfile)
+	}
+}
+
+func TestGetPairsReturnsSortedPairs(t *testing.T) {
+	store := keychain.NewFake()
+	recorder := &history.FakeRecorder{}
+	if err := store.Write("deadenv/myapp", "Z_KEY", "3"); err != nil {
+		t.Fatalf("Write(Z_KEY) error = %v", err)
+	}
+	if err := store.Write("deadenv/myapp", "A_KEY", "1"); err != nil {
+		t.Fatalf("Write(A_KEY) error = %v", err)
+	}
+	if err := store.Write("deadenv/myapp", "M_KEY", "2"); err != nil {
+		t.Fatalf("Write(M_KEY) error = %v", err)
+	}
+
+	service, err := NewProfileService(store, recorder, fixedHash)
+	if err != nil {
+		t.Fatalf("NewProfileService() error = %v", err)
+	}
+
+	got, err := service.GetPairs("myapp")
+	if err != nil {
+		t.Fatalf("GetPairs() error = %v", err)
+	}
+
+	want := []envPair.EnvPair{
+		{Key: "A_KEY", Value: "1"},
+		{Key: "M_KEY", Value: "2"},
+		{Key: "Z_KEY", Value: "3"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("GetPairs() = %#v, want %#v", got, want)
+	}
+}
+
+func TestReplaceProfileRemovesMissingAndSetsIncoming(t *testing.T) {
+	store := keychain.NewFake()
+	recorder := &history.FakeRecorder{}
+	if err := store.Write("deadenv/myapp", "A", "old-a"); err != nil {
+		t.Fatalf("Write(A) error = %v", err)
+	}
+	if err := store.Write("deadenv/myapp", "B", "old-b"); err != nil {
+		t.Fatalf("Write(B) error = %v", err)
+	}
+
+	service, err := NewProfileService(store, recorder, fixedHash)
+	if err != nil {
+		t.Fatalf("NewProfileService() error = %v", err)
+	}
+
+	err = service.ReplaceProfile("myapp", []envPair.EnvPair{
+		{Key: "B", Value: "new-b"},
+		{Key: "C", Value: "new-c"},
+	})
+	if err != nil {
+		t.Fatalf("ReplaceProfile() error = %v", err)
+	}
+
+	if _, err := store.Read("deadenv/myapp", "A", ""); !errors.Is(err, keychain.ErrKeyNotFound) {
+		t.Fatalf("Read(A) error = %v, want ErrKeyNotFound", err)
+	}
+
+	valueB, err := store.Read("deadenv/myapp", "B", "")
+	if err != nil {
+		t.Fatalf("Read(B) error = %v", err)
+	}
+	if valueB != "new-b" {
+		t.Fatalf("Read(B) = %q, want %q", valueB, "new-b")
+	}
+
+	valueC, err := store.Read("deadenv/myapp", "C", "")
+	if err != nil {
+		t.Fatalf("Read(C) error = %v", err)
+	}
+	if valueC != "new-c" {
+		t.Fatalf("Read(C) = %q, want %q", valueC, "new-c")
+	}
+
+	if len(recorder.Entries) != 3 {
+		t.Fatalf("history entries = %d, want 3", len(recorder.Entries))
+	}
+
+	gotOps := []string{
+		recorder.Entries[0].Operation + ":" + recorder.Entries[0].Key,
+		recorder.Entries[1].Operation + ":" + recorder.Entries[1].Key,
+		recorder.Entries[2].Operation + ":" + recorder.Entries[2].Key,
+	}
+	wantOps := []string{"unset:A", "set:B", "set:C"}
+	if !reflect.DeepEqual(gotOps, wantOps) {
+		t.Fatalf("history ops = %v, want %v", gotOps, wantOps)
+	}
+}
+
+func TestReplaceProfileWithEmptyPairsClearsExistingKeys(t *testing.T) {
+	store := keychain.NewFake()
+	recorder := &history.FakeRecorder{}
+	if err := store.Write("deadenv/myapp", "A", "1"); err != nil {
+		t.Fatalf("Write(A) error = %v", err)
+	}
+	if err := store.Write("deadenv/myapp", "B", "2"); err != nil {
+		t.Fatalf("Write(B) error = %v", err)
+	}
+
+	service, err := NewProfileService(store, recorder, fixedHash)
+	if err != nil {
+		t.Fatalf("NewProfileService() error = %v", err)
+	}
+
+	if err := service.ReplaceProfile("myapp", nil); err != nil {
+		t.Fatalf("ReplaceProfile() error = %v", err)
+	}
+
+	keys, err := store.List("deadenv/myapp")
+	if err != nil {
+		t.Fatalf("List() error = %v", err)
+	}
+	if len(keys) != 0 {
+		t.Fatalf("keys = %v, want empty", keys)
+	}
+
+	if len(recorder.Entries) != 2 {
+		t.Fatalf("history entries = %d, want 2", len(recorder.Entries))
+	}
+	for _, entry := range recorder.Entries {
+		if entry.Operation != history.OpUnset {
+			t.Fatalf("history operation = %q, want %q", entry.Operation, history.OpUnset)
+		}
 	}
 }
