@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"funinkina/deadenv/internal/keychain"
@@ -124,5 +125,75 @@ func TestEditCommandReturnsUnderlyingError(t *testing.T) {
 	err := root.Run(context.Background(), []string{"deadenv", "edit", "myapp"})
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("Run() error = %v, want %v", err, wantErr)
+	}
+}
+
+func TestEditCommandFormatsPartialApplyError(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldRunEdit := runEdit
+	defer func() {
+		newProfileService = oldNewProfileService
+		runEdit = oldRunEdit
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	runEdit = func(_ *profile.ProfileService, _ string, _ profile.EditOptions) error {
+		return &profile.PartialApplyError{
+			Succeeded: []string{"A"},
+			Failed: map[string]error{
+				"B": errors.New("boom"),
+			},
+		}
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "edit", "myapp"})
+	if !errors.Is(err, profile.ErrApplyChanges) {
+		t.Fatalf("Run() error = %v, want ErrApplyChanges", err)
+	}
+
+	msg := err.Error()
+	if !strings.Contains(msg, "succeeded keys: A") {
+		t.Fatalf("error message = %q, want succeeded keys", msg)
+	}
+	if !strings.Contains(msg, "failed keys: B (boom)") {
+		t.Fatalf("error message = %q, want failed keys detail", msg)
+	}
+}
+
+func TestEditCommandGivesEditorHint(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldRunEdit := runEdit
+	defer func() {
+		newProfileService = oldNewProfileService
+		runEdit = oldRunEdit
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	runEdit = func(_ *profile.ProfileService, _ string, _ profile.EditOptions) error {
+		return profile.ErrEditorFailed
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "edit", "myapp"})
+	if !errors.Is(err, profile.ErrEditorFailed) {
+		t.Fatalf("Run() error = %v, want ErrEditorFailed", err)
+	}
+
+	msg := err.Error()
+	if !strings.Contains(msg, "check $VISUAL or $EDITOR") {
+		t.Fatalf("error message = %q, want editor hint", msg)
 	}
 }

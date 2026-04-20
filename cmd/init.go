@@ -64,16 +64,28 @@ func defaultProfileService() (*profile.ProfileService, error) {
 }
 
 func commandWriter(cmd *cli.Command) io.Writer {
-	if cmd != nil && cmd.Writer != nil {
-		return cmd.Writer
+	if cmd != nil {
+		if cmd.Writer != nil {
+			return cmd.Writer
+		}
+
+		if root := cmd.Root(); root != nil && root.Writer != nil {
+			return root.Writer
+		}
 	}
 
 	return os.Stdout
 }
 
 func commandErrWriter(cmd *cli.Command) io.Writer {
-	if cmd != nil && cmd.ErrWriter != nil {
-		return cmd.ErrWriter
+	if cmd != nil {
+		if cmd.ErrWriter != nil {
+			return cmd.ErrWriter
+		}
+
+		if root := cmd.Root(); root != nil && root.ErrWriter != nil {
+			return root.ErrWriter
+		}
 	}
 
 	return os.Stderr

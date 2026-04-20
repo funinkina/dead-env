@@ -42,6 +42,11 @@ func newProfileNewCommand() *cli.Command {
 				Name:  "from",
 				Usage: "Path to an env-format file used to create the profile",
 			},
+			&cli.BoolFlag{
+				Name:    "yes",
+				Aliases: []string{"y"},
+				Usage:   "Create profile without confirmation",
+			},
 		},
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			profileName := strings.TrimSpace(cmd.Args().First())
@@ -72,19 +77,27 @@ func newProfileNewCommand() *cli.Command {
 			}
 
 			if len(pairs) == 0 {
-				return profile.ErrEmptyContent
+				if fromPath == "" {
+					_, _ = fmt.Fprintln(commandWriter(cmd), "Creation cancelled: no variables found.")
+					return nil
+				}
+
+				return fmt.Errorf("%w: no variables found in %q", profile.ErrEmptyContent, fromPath)
 			}
 
 			if err := printPairSummary(commandWriter(cmd), pairs); err != nil {
 				return fmt.Errorf("printing key summary: %w", err)
 			}
 
-			ok, err := promptConfirm("Create profile with these keys?")
-			if err != nil {
-				return fmt.Errorf("confirming profile creation: %w", err)
-			}
-			if !ok {
-				return profile.ErrCancelled
+			if !cmd.Bool("yes") {
+				ok, err := promptConfirm("Create profile with these keys?")
+				if err != nil {
+					return fmt.Errorf("confirming profile creation: %w", err)
+				}
+				if !ok {
+					_, _ = fmt.Fprintln(commandWriter(cmd), "Creation cancelled.")
+					return nil
+				}
 			}
 
 			if err := service.Create(profileName, pairs); err != nil {

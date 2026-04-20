@@ -110,13 +110,95 @@ func TestProfileNewCancelled(t *testing.T) {
 
 	root := NewRootCommand()
 	err := root.Run(context.Background(), []string{"deadenv", "profile", "new", "myapp"})
-	if !errors.Is(err, profile.ErrCancelled) {
-		t.Fatalf("Run() error = %v, want ErrCancelled", err)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
 	}
 
 	_, err = store.Read("deadenv/myapp", "A", "")
 	if !errors.Is(err, keychain.ErrKeyNotFound) {
 		t.Fatalf("Read() error = %v, want ErrKeyNotFound", err)
+	}
+}
+
+func TestProfileNewEditorEmptyCancelsCleanly(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldLoadPairsFromEditor := loadPairsFromEditor
+	oldPrintPairSummary := printPairSummary
+	defer func() {
+		newProfileService = oldNewProfileService
+		loadPairsFromEditor = oldLoadPairsFromEditor
+		printPairSummary = oldPrintPairSummary
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+	loadPairsFromEditor = func(initialContent string) ([]envPair.EnvPair, error) {
+		_ = initialContent
+		return []envPair.EnvPair{}, nil
+	}
+	printPairSummary = func(_ io.Writer, _ []envPair.EnvPair) error {
+		t.Fatal("printPairSummary should not be called for empty parsed content")
+		return nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "new", "myapp"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	_, readErr := store.Read("deadenv/myapp", "A", "")
+	if !errors.Is(readErr, keychain.ErrKeyNotFound) {
+		t.Fatalf("Read() error = %v, want ErrKeyNotFound", readErr)
+	}
+}
+
+func TestProfileNewYesSkipsConfirmation(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldLoadPairsFromFile := loadPairsFromFile
+	oldPromptConfirm := promptConfirm
+	oldPrintPairSummary := printPairSummary
+	defer func() {
+		newProfileService = oldNewProfileService
+		loadPairsFromFile = oldLoadPairsFromFile
+		promptConfirm = oldPromptConfirm
+		printPairSummary = oldPrintPairSummary
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+	loadPairsFromFile = func(path string) ([]envPair.EnvPair, error) {
+		_ = path
+		return []envPair.EnvPair{{Key: "A", Value: "1"}}, nil
+	}
+	promptConfirm = func(message string) (bool, error) {
+		t.Fatalf("promptConfirm should not be called when --yes is set (message=%q)", message)
+		return false, nil
+	}
+	printPairSummary = func(_ io.Writer, _ []envPair.EnvPair) error {
+		return nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "new", "myapp", "--from", "app.env", "--yes"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	value, err := store.Read("deadenv/myapp", "A", "")
+	if err != nil {
+		t.Fatalf("Read() error = %v", err)
+	}
+	if value != "1" {
+		t.Fatalf("value = %q, want %q", value, "1")
 	}
 }
 

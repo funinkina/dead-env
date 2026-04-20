@@ -55,6 +55,16 @@ func PrintChangeSummary(out io.Writer, added, modified, removed []string) error 
 	sort.Strings(modified)
 	sort.Strings(removed)
 
+	if _, err := fmt.Fprintf(
+		out,
+		"  Added: %d  Modified: %d  Removed: %d\n",
+		len(added),
+		len(modified),
+		len(removed),
+	); err != nil {
+		return err
+	}
+
 	for _, key := range added {
 		if _, err := fmt.Fprintf(out, "  [set]      %s\n", key); err != nil {
 			return err
@@ -95,6 +105,10 @@ func PrintPairSummary(out io.Writer, pairs []envPair.EnvPair) error {
 		if _, err := fmt.Fprintf(out, "  - %s\n", key); err != nil {
 			return err
 		}
+	}
+
+	if _, err := fmt.Fprintln(out, "(values are hidden)"); err != nil {
+		return err
 	}
 
 	return nil
