@@ -5,9 +5,30 @@ import (
 	"funinkina/deadenv/internal/keychain"
 )
 
+type HashFunc func(value string) (string, error)
+
 type ProfileService struct {
-	store    keychain.Store
-	recorder history.Recorder
+	store     keychain.Store
+	recorder  history.Recorder
+	hashValue HashFunc
+}
+
+func NewProfileService(
+	store keychain.Store,
+	recorder history.Recorder,
+	hashValue HashFunc,
+) (*ProfileService, error) {
+	if store == nil {
+		return nil, ErrNilStore
+	}
+
+	if recorder == nil {
+		// return nil,
+	}
+
+	if hashValue == nil {
+		hashValue = history.HashValue
+	}
 }
 
 func NewProfileService(store keychain.Store, recorder history.Recorder) *ProfileService {
