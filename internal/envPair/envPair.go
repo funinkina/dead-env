@@ -1,4 +1,4 @@
-package env
+package envPair
 
 type EnvPair struct {
 	Key   string

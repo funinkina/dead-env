@@ -2,6 +2,7 @@ package profile
 
 import (
 	"fmt"
+	"funinkina/deadenv/internal/envPair"
 	"funinkina/deadenv/internal/history"
 	"funinkina/deadenv/internal/keychain"
 )
@@ -98,7 +99,7 @@ func (p *ProfileService) ListKeys(profile string) ([]string, error) {
 	return keys, nil
 }
 
-func (p *ProfileService) Create(profile string, pairs []keychain.EnvPair) error {
+func (p *ProfileService) Create(profile string, pairs []envPair.EnvPair) error {
 	if profile == "" {
 		return keychain.ErrProfileNameEmpty
 	}
