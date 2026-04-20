@@ -1,8 +1,8 @@
 package profile
 
 import (
-	"deadenv/internal/history"
-	"deadenv/internal/keychain"
+	"funinkina/deadenv/internal/history"
+	"funinkina/deadenv/internal/keychain"
 )
 
 type HashFunc func(value string) (string, error)
