@@ -12,12 +12,12 @@ var profileNameRE = regexp.MustCompile(`^[a-z0-9-]{1,64}$`)
 
 func profileFromService(service string) (string, error) {
 	if !strings.HasPrefix(service, servicePrefix) {
-		return "", fmt.Errorf("invalid service %q: expected %q prefix", service, servicePrefix)
+		return "", fmt.Errorf("%w: expected %q prefix (got %q)", ErrInvalidService, servicePrefix, service)
 	}
 
 	profile := strings.TrimPrefix(service, servicePrefix)
 	if !profileNameRE.MatchString(profile) {
-		return "", fmt.Errorf("invalid service %q: invalid profile name", service)
+		return "", fmt.Errorf("%w: invalid profile name in service %q", ErrInvalidService, service)
 	}
 
 	return profile, nil
@@ -29,9 +29,17 @@ func targetName(service, account string) (string, error) {
 		return "", err
 	}
 
-	if strings.TrimSpace(account) == "" {
-		return "", fmt.Errorf("account cannot be empty")
+	if err := validateAccount(account); err != nil {
+		return "", err
 	}
 
 	return servicePrefix + profile + "/" + account, nil
+}
+
+func validateAccount(account string) error {
+	if strings.TrimSpace(account) == "" {
+		return ErrInvalidAccount
+	}
+
+	return nil
 }

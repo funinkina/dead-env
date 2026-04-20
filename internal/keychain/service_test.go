@@ -1,6 +1,9 @@
 package keychain
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestProfileFromService(t *testing.T) {
 	tests := []struct {
@@ -35,5 +38,19 @@ func TestTargetName(t *testing.T) {
 	}
 	if got != "deadenv/myapp/API_KEY" {
 		t.Fatalf("targetName() = %q, want %q", got, "deadenv/myapp/API_KEY")
+	}
+}
+
+func TestProfileFromServiceReturnsErrInvalidService(t *testing.T) {
+	_, err := profileFromService("myapp")
+	if !errors.Is(err, ErrInvalidService) {
+		t.Fatalf("profileFromService() error = %v, want ErrInvalidService", err)
+	}
+}
+
+func TestTargetNameReturnsErrInvalidAccount(t *testing.T) {
+	_, err := targetName("deadenv/myapp", "   ")
+	if !errors.Is(err, ErrInvalidAccount) {
+		t.Fatalf("targetName() error = %v, want ErrInvalidAccount", err)
 	}
 }

@@ -1,5 +1,7 @@
 package keychain
 
+import "sort"
+
 type ReadCall struct {
 	Service string
 	Account string
@@ -74,6 +76,8 @@ func (f *FakeStore) List(service string) ([]string, error) {
 	for k := range f.data[service] {
 		keys = append(keys, k)
 	}
+
+	sort.Strings(keys)
 
 	return keys, nil
 }

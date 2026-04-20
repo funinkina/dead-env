@@ -31,8 +31,8 @@ func (s *linuxStore) Write(service, account, value string) error {
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(account) == "" {
-		return fmt.Errorf("account cannot be empty")
+	if err := validateAccount(account); err != nil {
+		return err
 	}
 
 	svc, session, err := s.openSession()
@@ -48,7 +48,7 @@ func (s *linuxStore) Write(service, account, value string) error {
 
 	_, err = svc.CreateItem(
 		secretservice.DefaultCollection,
-		secretservice.NewSecretProperties(linuxSecretLabel(profile, account), linuxSecretAttributes(profile, account)),
+		secretservice.NewSecretProperties(linuxSecretApplicationName+" "+profile+":"+account, linuxSecretAttributes(profile, account)),
 		secret,
 		secretservice.ReplaceBehaviorReplace,
 	)
@@ -66,8 +66,8 @@ func (s *linuxStore) Read(service, account, prompt string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if strings.TrimSpace(account) == "" {
-		return "", fmt.Errorf("account cannot be empty")
+	if err := validateAccount(account); err != nil {
+		return "", err
 	}
 
 	svc, session, err := s.openSession()
@@ -97,8 +97,8 @@ func (s *linuxStore) Delete(service, account string) error {
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(account) == "" {
-		return fmt.Errorf("account cannot be empty")
+	if err := validateAccount(account); err != nil {
+		return err
 	}
 
 	svc, err := s.newService()
@@ -137,6 +137,7 @@ func (s *linuxStore) List(service string) ([]string, error) {
 	}
 
 	keys := make([]string, 0, len(items))
+	seen := make(map[string]struct{}, len(items))
 	for _, item := range items {
 		attributes, attrErr := svc.GetAttributes(item)
 		if attrErr != nil {
@@ -147,6 +148,10 @@ func (s *linuxStore) List(service string) ([]string, error) {
 		if key == "" {
 			continue
 		}
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
 		keys = append(keys, key)
 	}
 
@@ -186,10 +191,6 @@ func linuxSecretProfileAttributes(profile string) secretservice.Attributes {
 		linuxSecretAttributeApplication: linuxSecretApplicationName,
 		linuxSecretAttributeProfile:     profile,
 	}
-}
-
-func linuxSecretLabel(profile, account string) string {
-	return linuxSecretApplicationName + " " + profile + ":" + account
 }
 
 func linuxSecretServiceError(action string, err error) error {

@@ -50,9 +50,19 @@ func TestLinuxSecretServiceErrorMapsNotImplemented(t *testing.T) {
 	}
 }
 
-func TestLinuxSecretLabel(t *testing.T) {
-	got := linuxSecretLabel("myapp", "API_KEY")
-	if got != "deadenv myapp:API_KEY" {
-		t.Fatalf("linuxSecretLabel() = %q, want %q", got, "deadenv myapp:API_KEY")
+func TestLinuxWriteReturnsErrInvalidAccount(t *testing.T) {
+	store, err := New()
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	linuxStore, ok := store.(*linuxStore)
+	if !ok {
+		t.Fatalf("New() store type = %T, want *linuxStore", store)
+	}
+
+	err = linuxStore.Write("deadenv/myapp", "\t", "secret")
+	if !errors.Is(err, ErrInvalidAccount) {
+		t.Fatalf("Write() error = %v, want ErrInvalidAccount", err)
 	}
 }
