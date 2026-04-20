@@ -30,10 +30,11 @@ func NewProfileService(
 	if hashValue == nil {
 		hashValue = history.HashValue
 	}
-}
-
-func NewProfileService(store keychain.Store, recorder history.Recorder) *ProfileService {
-	return &ProfileService{store, recorder}
+	return &ProfileService{
+		store:     store,
+		recorder:  recorder,
+		hashValue: hashValue,
+	}, nil
 }
 
 // helper function
