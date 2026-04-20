@@ -1,8 +1,22 @@
 package history
 
+import "time"
+
 type HistoryEntry struct {
-	Profile   string
-	Operation string
-	Key       string
-	ValueHash string
+	Profile   string    `json:"profile"`
+	Operation string    `json:"operation"`
+	Key       string    `json:"key"`
+	ValueHash string    `json:"value_hash,omitempty"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+type ProfileSnapshot struct {
+	Profile string
+	Keys    map[string]KeySnapshot
+}
+
+type KeySnapshot struct {
+	Op        string    `json:"op"`
+	ValueHash string    `json:"value_hash,omitempty"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
