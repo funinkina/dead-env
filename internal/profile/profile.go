@@ -42,7 +42,7 @@ func getServiceName(profile string) string {
 	return "deadenv/" + profile
 }
 
-func SetKey(profile, key, value string) error {
+func SetKey(profile, key, value string, store keychain.Store) error {
 	service := getServiceName(profile)
 	err := store.Write(service, key, value)
 	if err != nil {
