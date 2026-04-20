@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 
 	"funinkina/deadenv/internal/envPair"
@@ -199,6 +200,37 @@ func TestProfileNewYesSkipsConfirmation(t *testing.T) {
 	}
 	if value != "1" {
 		t.Fatalf("value = %q, want %q", value, "1")
+	}
+}
+
+func TestProfileNewGivesEditorHint(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldLoadPairsFromEditor := loadPairsFromEditor
+	defer func() {
+		newProfileService = oldNewProfileService
+		loadPairsFromEditor = oldLoadPairsFromEditor
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+	loadPairsFromEditor = func(initialContent string) ([]envPair.EnvPair, error) {
+		_ = initialContent
+		return nil, profile.ErrEditorFailed
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "new", "myapp"})
+	if !errors.Is(err, profile.ErrEditorFailed) {
+		t.Fatalf("Run() error = %v, want ErrEditorFailed", err)
+	}
+
+	msg := err.Error()
+	if !strings.Contains(msg, "$DEADENV_EDITOR") || !strings.Contains(msg, "$VISUAL") || !strings.Contains(msg, "$EDITOR") {
+		t.Fatalf("error message = %q, want editor hint", msg)
 	}
 }
 

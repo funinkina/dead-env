@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -73,6 +74,10 @@ func newProfileNewCommand() *cli.Command {
 			}
 
 			if pairsErr != nil {
+				if errors.Is(pairsErr, profile.ErrEditorFailed) {
+					return fmt.Errorf("failed to open editor; set $DEADENV_EDITOR, $VISUAL, or $EDITOR (e.g. nano): %w", pairsErr)
+				}
+
 				return pairsErr
 			}
 

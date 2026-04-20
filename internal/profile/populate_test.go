@@ -5,8 +5,100 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestResolveEditorPrefersDeadenvEditor(t *testing.T) {
+	t.Setenv("DEADENV_EDITOR", "nano --tempfile")
+	t.Setenv("VISUAL", "vim")
+	t.Setenv("EDITOR", "vi")
+
+	got := resolveEditor()
+	if got != "nano --tempfile" {
+		t.Fatalf("resolveEditor() = %q, want %q", got, "nano --tempfile")
+	}
+}
+
+func TestResolveEditorPrefersVisualOverEditor(t *testing.T) {
+	t.Setenv("DEADENV_EDITOR", "")
+	t.Setenv("VISUAL", "nvim")
+	t.Setenv("EDITOR", "nano")
+
+	got := resolveEditor()
+	if got != "nvim" {
+		t.Fatalf("resolveEditor() = %q, want %q", got, "nvim")
+	}
+}
+
+func TestResolveEditorFallsBackToFirstAvailableDefault(t *testing.T) {
+	t.Setenv("DEADENV_EDITOR", "")
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", "")
+
+	oldLookPath := editorLookPath
+	editorLookPath = func(file string) (string, error) {
+		switch file {
+		case "nano":
+			return "/usr/bin/nano", nil
+		default:
+			return "", errors.New("not found")
+		}
+	}
+	defer func() {
+		editorLookPath = oldLookPath
+	}()
+
+	got := resolveEditor()
+	if got != "nano" {
+		t.Fatalf("resolveEditor() = %q, want %q", got, "nano")
+	}
+}
+
+func TestResolveEditorReturnsEmptyWhenNoEditorFound(t *testing.T) {
+	t.Setenv("DEADENV_EDITOR", "")
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", "")
+
+	oldLookPath := editorLookPath
+	editorLookPath = func(file string) (string, error) {
+		_ = file
+		return "", errors.New("not found")
+	}
+	defer func() {
+		editorLookPath = oldLookPath
+	}()
+
+	got := resolveEditor()
+	if got != "" {
+		t.Fatalf("resolveEditor() = %q, want empty string", got)
+	}
+}
+
+func TestEditorCommandReturnsHelpfulErrorWhenNoEditorConfigured(t *testing.T) {
+	t.Setenv("DEADENV_EDITOR", "")
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", "")
+
+	oldLookPath := editorLookPath
+	editorLookPath = func(file string) (string, error) {
+		_ = file
+		return "", errors.New("not found")
+	}
+	defer func() {
+		editorLookPath = oldLookPath
+	}()
+
+	_, _, err := editorCommand("/tmp/file")
+	if err == nil {
+		t.Fatal("editorCommand() error = nil, want non-nil")
+	}
+
+	msg := err.Error()
+	if !strings.Contains(msg, "DEADENV_EDITOR") || !strings.Contains(msg, "VISUAL") || !strings.Contains(msg, "EDITOR") {
+		t.Fatalf("editorCommand() error = %q, want env var guidance", msg)
+	}
+}
 
 func TestFromFileParsesValidContent(t *testing.T) {
 	dir := t.TempDir()

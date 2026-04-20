@@ -65,7 +65,7 @@ func NewEditCommand() *cli.Command {
 			}
 
 			if errors.Is(err, profile.ErrEditorFailed) {
-				return fmt.Errorf("failed to open editor; check $VISUAL or $EDITOR: %w", err)
+				return fmt.Errorf("failed to open editor; set $DEADENV_EDITOR, $VISUAL, or $EDITOR (e.g. nano): %w", err)
 			}
 
 			if err != nil {

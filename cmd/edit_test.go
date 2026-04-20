@@ -193,7 +193,7 @@ func TestEditCommandGivesEditorHint(t *testing.T) {
 	}
 
 	msg := err.Error()
-	if !strings.Contains(msg, "check $VISUAL or $EDITOR") {
+	if !strings.Contains(msg, "$DEADENV_EDITOR") || !strings.Contains(msg, "$VISUAL") || !strings.Contains(msg, "$EDITOR") {
 		t.Fatalf("error message = %q, want editor hint", msg)
 	}
 }

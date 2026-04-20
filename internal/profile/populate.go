@@ -12,6 +12,11 @@ import (
 
 type editorRunner func(path string) error
 
+var (
+	editorLookPath = exec.LookPath
+	defaultEditors = []string{"nano", "nvim", "vim", "vi"}
+)
+
 func FromFile(path string) ([]envPair.EnvPair, error) {
 	if strings.TrimSpace(path) == "" {
 		return nil, fmt.Errorf("file path cannot be empty")
@@ -102,7 +107,7 @@ func editorCommand(path string) (string, []string, error) {
 	editor := resolveEditor()
 	parts := strings.Fields(editor)
 	if len(parts) == 0 {
-		return "", nil, fmt.Errorf("no editor configured")
+		return "", nil, fmt.Errorf("no editor configured; set DEADENV_EDITOR, VISUAL, or EDITOR")
 	}
 
 	name := parts[0]
@@ -112,6 +117,10 @@ func editorCommand(path string) (string, []string, error) {
 }
 
 func resolveEditor() string {
+	if deadenvEditor := strings.TrimSpace(os.Getenv("DEADENV_EDITOR")); deadenvEditor != "" {
+		return deadenvEditor
+	}
+
 	if visual := strings.TrimSpace(os.Getenv("VISUAL")); visual != "" {
 		return visual
 	}
@@ -120,5 +129,11 @@ func resolveEditor() string {
 		return editor
 	}
 
-	return "vi"
+	for _, editor := range defaultEditors {
+		if _, err := editorLookPath(editor); err == nil {
+			return editor
+		}
+	}
+
+	return ""
 }
