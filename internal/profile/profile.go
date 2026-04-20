@@ -1,8 +1,9 @@
 package profile
 
 import (
-	"funinkina/deadenv/internal/history"
-	"funinkina/deadenv/internal/keychain"
+	"deadenv/internal/fake_history"
+	"deadenv/internal/history"
+	"deadenv/internal/keychain"
 )
 
 type ProfileService struct {
@@ -26,7 +27,7 @@ func SetKey(profile, key, value string) error {
 		return err
 	}
 	hash := hashValue(value)
-	history.Record(profile, "set", key)
+	fake_history.Record(profile, "set", key, hash)
 	return nil
 
 }
