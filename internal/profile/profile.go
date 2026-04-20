@@ -51,7 +51,7 @@ func (p *ProfileService) SetKey(profile, key, value string) error {
 	if err != nil {
 		return err
 	}
-	err = p.recorder.Record(profile, "set", key, hash)
+	err = p.recorder.Record(profile, history.OpSet, key, hash)
 	if err != nil {
 		return err
 	}
