@@ -21,7 +21,14 @@ func getServiceName(profile string) string {
 
 func SetKey(profile, key, value string) error {
 	service := getServiceName(profile)
-	store.Write(service, key, value)
+	err := store.Write(service, key, value)
+	if err != nil {
+		return err
+	}
+	hash := hashValue(value)
+	history.Record(profile, "set", key)
+	return nil
+
 }
 
 func hashValue(value string) string {
