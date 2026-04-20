@@ -25,7 +25,7 @@ func NewProfileService(
 	}
 
 	if recorder == nil {
-		// return nil, err
+		recorder = history.NewNoopRecorder()
 	}
 
 	if hashValue == nil {
@@ -144,7 +144,7 @@ func (p *ProfileService) Delete(profile string) error {
 			return fmt.Errorf("error deleting key: %w", err)
 		}
 	}
-	err = p.recorder.Record(profile, "delete-profile", "", "")
+	err = p.recorder.Record(profile, history.OpDeleteProfile, "", "")
 	if err != nil {
 		return fmt.Errorf("error recording operation: %w", err)
 	}

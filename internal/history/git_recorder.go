@@ -72,7 +72,7 @@ func (r *GitRecorder) Record(profile, operation, key, valueHash string) error {
 		return fmt.Errorf("operation cannot be empty")
 	}
 
-	if strings.TrimSpace(key) == "" {
+	if operation != OpDeleteProfile && strings.TrimSpace(key) == "" {
 		return fmt.Errorf("key cannot be empty")
 	}
 
@@ -88,10 +88,17 @@ func (r *GitRecorder) Record(profile, operation, key, valueHash string) error {
 		snapshot.Keys = make(map[string]KeySnapshot)
 	}
 
-	snapshot.Keys[key] = KeySnapshot{
-		Op:        operation,
-		ValueHash: valueHash,
-		UpdatedAt: r.now().UTC(),
+	now := r.now().UTC()
+
+	if operation == OpDeleteProfile {
+		snapshot.DeletedAt = &now
+	} else {
+		snapshot.DeletedAt = nil
+		snapshot.Keys[key] = KeySnapshot{
+			Op:        operation,
+			ValueHash: valueHash,
+			UpdatedAt: now,
+		}
 	}
 
 	if err := writeProfileSnapshot(snapshotPath, snapshot); err != nil {
@@ -103,8 +110,12 @@ func (r *GitRecorder) Record(profile, operation, key, valueHash string) error {
 	}
 
 	msg := fmt.Sprintf("[%s] %s %s", profile, operation, key)
+	if operation == OpDeleteProfile {
+		msg = fmt.Sprintf("[%s] delete profile", profile)
+	}
 
 	if err := r.git(
+		"-c", "commit.gpgsign=false",
 		"-c", "user.name="+r.commitName,
 		"-c", "user.email="+r.commitMail,
 		"commit", "-m", msg,

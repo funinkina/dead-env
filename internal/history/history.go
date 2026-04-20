@@ -5,6 +5,7 @@ type Recorder interface {
 }
 
 const (
-	OpSet   = "set"
-	OpUnset = "unset"
+	OpSet           = "set"
+	OpUnset         = "unset"
+	OpDeleteProfile = "delete-profile"
 )

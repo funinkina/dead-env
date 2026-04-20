@@ -11,8 +11,9 @@ type HistoryEntry struct {
 }
 
 type ProfileSnapshot struct {
-	Profile string
-	Keys    map[string]KeySnapshot
+	Profile   string
+	Keys      map[string]KeySnapshot
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 }
 
 type KeySnapshot struct {
