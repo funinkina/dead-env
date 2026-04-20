@@ -10,3 +10,7 @@ func NewNoopRecorder() *NoopRecorder {
 func (n *NoopRecorder) Record(profile, operation, key, valueHash string) error {
 	return nil
 }
+
+func (n *NoopRecorder) Log(profile, key string) ([]HistoryEntry, error) {
+	return []HistoryEntry{}, nil
+}

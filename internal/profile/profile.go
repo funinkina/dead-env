@@ -43,12 +43,16 @@ func getServiceName(profile string) string {
 	return "deadenv/" + profile
 }
 
+func accessPrompt(profile string) string {
+	return fmt.Sprintf(`deadenv wants to access profile "%s"`, profile)
+}
+
 func (p *ProfileService) SetKey(profile, key, value string) error {
 	if profile == "" {
-		return keychain.ErrProfileNameEmpty
+		return ErrProfileNameEmpty
 	}
 	if key == "" {
-		return keychain.ErrKeyEmpty
+		return ErrKeyEmpty
 	}
 	service := getServiceName(profile)
 	err := p.store.Write(service, key, value)
@@ -82,7 +86,7 @@ func (p *ProfileService) UnsetKey(profile, key string) error {
 
 func (p *ProfileService) GetKey(profile, key string) (string, error) {
 	service := getServiceName(profile)
-	prompt := fmt.Sprintf(`deadenv wants to access profile "%s"`, profile)
+	prompt := accessPrompt(profile)
 	value, err := p.store.Read(service, key, prompt)
 	if err != nil {
 		return "", fmt.Errorf("error reading key: %w", err)
@@ -101,15 +105,15 @@ func (p *ProfileService) ListKeys(profile string) ([]string, error) {
 
 func (p *ProfileService) Create(profile string, pairs []envPair.EnvPair) error {
 	if profile == "" {
-		return keychain.ErrProfileNameEmpty
+		return ErrProfileNameEmpty
 	}
 	if len(pairs) == 0 {
-		return keychain.ErrEmptyContent
+		return ErrEmptyContent
 	}
 	service := getServiceName(profile)
 	for _, pair := range pairs {
 		if pair.Key == "" {
-			return keychain.ErrKeyEmpty
+			return ErrKeyEmpty
 		}
 		err := p.store.Write(service, pair.Key, pair.Value)
 		if err != nil {
@@ -131,7 +135,7 @@ func (p *ProfileService) Create(profile string, pairs []envPair.EnvPair) error {
 
 func (p *ProfileService) Delete(profile string) error {
 	if profile == "" {
-		return keychain.ErrProfileNameEmpty
+		return ErrProfileNameEmpty
 	}
 	service := getServiceName(profile)
 	keys, err := p.store.List(service)
@@ -153,16 +157,17 @@ func (p *ProfileService) Delete(profile string) error {
 
 func (p *ProfileService) Copy(srcProfile, dstProfile string) error {
 	if srcProfile == "" || dstProfile == "" {
-		return keychain.ErrProfileNameEmpty
+		return ErrProfileNameEmpty
 	}
 	srcService := getServiceName(srcProfile)
 	dstService := getServiceName(dstProfile)
+	prompt := accessPrompt(srcProfile)
 	keys, err := p.store.List(srcService)
 	if err != nil {
 		return fmt.Errorf("error listing keys: %w", err)
 	}
 	for _, key := range keys {
-		value, err := p.store.Read(srcService, key, "")
+		value, err := p.store.Read(srcService, key, prompt)
 		if err != nil {
 			return fmt.Errorf("error reading key %s: %w", key, err)
 		}
@@ -186,7 +191,7 @@ func (p *ProfileService) Copy(srcProfile, dstProfile string) error {
 
 func (p *ProfileService) Rename(srcProfile, dstProfile string) error {
 	if srcProfile == "" || dstProfile == "" {
-		return keychain.ErrProfileNameEmpty
+		return ErrProfileNameEmpty
 	}
 	err := p.Copy(srcProfile, dstProfile)
 	if err != nil {

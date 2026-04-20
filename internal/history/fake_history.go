@@ -22,3 +22,23 @@ func (f *FakeRecorder) Record(profile, operation, key, valueHash string) error {
 
 	return nil
 }
+
+func (f *FakeRecorder) Log(profile, key string) ([]HistoryEntry, error) {
+	if f.Err != nil {
+		return nil, f.Err
+	}
+
+	entries := make([]HistoryEntry, 0, len(f.Entries))
+	for _, entry := range f.Entries {
+		if entry.Profile != profile {
+			continue
+		}
+		if key != "" && entry.Key != key {
+			continue
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries, nil
+}

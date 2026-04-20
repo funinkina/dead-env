@@ -126,6 +126,41 @@ func (r *GitRecorder) Record(profile, operation, key, valueHash string) error {
 	return nil
 }
 
+func (r *GitRecorder) Log(profile, key string) ([]HistoryEntry, error) {
+	if err := validateProfileName(profile); err != nil {
+		return nil, err
+	}
+
+	out, err := r.gitOutput("log", "--format=%H%x00%cI%x00%s", "--", profile+".json")
+	if err != nil {
+		if isNoCommitsError(err) {
+			return []HistoryEntry{}, nil
+		}
+
+		return nil, err
+	}
+
+	raw := strings.TrimSpace(string(out))
+	if raw == "" {
+		return []HistoryEntry{}, nil
+	}
+
+	lines := strings.Split(raw, "\n")
+	entries := make([]HistoryEntry, 0, len(lines))
+
+	for _, line := range lines {
+		entry, include, err := r.parseLogLine(profile, key, line)
+		if err != nil {
+			return nil, err
+		}
+		if include {
+			entries = append(entries, entry)
+		}
+	}
+
+	return entries, nil
+}
+
 func (r *GitRecorder) ensureRepository() error {
 	gitDir := filepath.Join(r.repoDir, ".git")
 
@@ -143,12 +178,17 @@ func (r *GitRecorder) ensureRepository() error {
 }
 
 func (r *GitRecorder) git(args ...string) error {
+	_, err := r.gitOutput(args...)
+	return err
+}
+
+func (r *GitRecorder) gitOutput(args ...string) ([]byte, error) {
 	cmdArgs := append([]string{"-C", r.repoDir}, args...)
 	cmd := exec.Command(r.gitBinary, cmdArgs...)
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
-		return fmt.Errorf(
+		return nil, fmt.Errorf(
 			"%w: git %s: %v: %s",
 			ErrGitCommandFailed,
 			strings.Join(args, " "),
@@ -157,7 +197,93 @@ func (r *GitRecorder) git(args ...string) error {
 		)
 	}
 
-	return nil
+	return out, nil
+}
+
+func (r *GitRecorder) parseLogLine(profile, keyFilter, line string) (HistoryEntry, bool, error) {
+	parts := strings.SplitN(line, "\x00", 3)
+	if len(parts) != 3 {
+		return HistoryEntry{}, false, fmt.Errorf("unexpected git log format for profile %q", profile)
+	}
+
+	timestamp, err := time.Parse(time.RFC3339, parts[1])
+	if err != nil {
+		return HistoryEntry{}, false, fmt.Errorf("parsing history timestamp %q: %w", parts[1], err)
+	}
+
+	operation, key, err := parseCommitSubject(profile, parts[2])
+	if err != nil {
+		return HistoryEntry{}, false, err
+	}
+
+	if keyFilter != "" && key != keyFilter {
+		return HistoryEntry{}, false, nil
+	}
+
+	valueHash := ""
+	if operation != OpDeleteProfile {
+		valueHash, err = r.valueHashAtCommit(parts[0], profile, key)
+		if err != nil {
+			return HistoryEntry{}, false, err
+		}
+	}
+
+	return HistoryEntry{
+		Profile:   profile,
+		Operation: operation,
+		Key:       key,
+		ValueHash: valueHash,
+		Timestamp: timestamp,
+	}, true, nil
+}
+
+func parseCommitSubject(profile, subject string) (string, string, error) {
+	deleteSubject := fmt.Sprintf("[%s] delete profile", profile)
+	if subject == deleteSubject {
+		return OpDeleteProfile, "", nil
+	}
+
+	prefix := fmt.Sprintf("[%s] ", profile)
+	if !strings.HasPrefix(subject, prefix) {
+		return "", "", fmt.Errorf("unexpected history commit subject %q", subject)
+	}
+
+	rest := strings.TrimPrefix(subject, prefix)
+	operation, key, ok := strings.Cut(rest, " ")
+	if !ok || strings.TrimSpace(key) == "" {
+		return "", "", fmt.Errorf("unexpected history commit subject %q", subject)
+	}
+
+	return operation, key, nil
+}
+
+func (r *GitRecorder) valueHashAtCommit(commitHash, profile, key string) (string, error) {
+	out, err := r.gitOutput("show", commitHash+":"+profile+".json")
+	if err != nil {
+		return "", err
+	}
+
+	var snapshot ProfileSnapshot
+	if err := json.Unmarshal(out, &snapshot); err != nil {
+		return "", fmt.Errorf("decoding history snapshot for commit %q: %w", commitHash, err)
+	}
+
+	keySnapshot, ok := snapshot.Keys[key]
+	if !ok {
+		return "", fmt.Errorf("history snapshot for commit %q missing key %q", commitHash, key)
+	}
+
+	return keySnapshot.ValueHash, nil
+}
+
+func isNoCommitsError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	msg := err.Error()
+	return strings.Contains(msg, "does not have any commits yet") ||
+		(strings.Contains(msg, "your current branch") && strings.Contains(msg, "does not have any commits yet"))
 }
 
 func readProfileSnapshot(path, profile string) (ProfileSnapshot, error) {
