@@ -56,5 +56,26 @@ func (p *ProfileService) SetKey(profile, key, value string) error {
 		return err
 	}
 	return nil
+}
 
+func (p *ProfileService) UnSetKey(profile, key string) error {
+	service := getServiceName(profile)
+	err := p.store.Delete(service, key)
+	if err != nil {
+		return err
+	}
+	err = p.recorder.Record(profile, history.OpUnset, key, "")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *ProfileService) GetKey(profile, key, prompt string) (string, error) {
+	service := getServiceName(profile)
+	value, err := p.store.Read(profile, key, prompt)
+	if err != nil {
+		return "", err
+	}
+	return value, nil
 }
