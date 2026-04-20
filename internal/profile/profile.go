@@ -81,7 +81,7 @@ func (p *ProfileService) UnsetKey(profile, key string) error {
 
 func (p *ProfileService) GetKey(profile, key string) (string, error) {
 	service := getServiceName(profile)
-	prompt := "deadenv wants to access " + profile + ""
+	prompt := fmt.Sprintf(`deadenv wants to access profile "%s"`, profile)
 	value, err := p.store.Read(service, key, prompt)
 	if err != nil {
 		return "", fmt.Errorf("error reading key: %w", err)
@@ -133,9 +133,19 @@ func (p *ProfileService) Delete(profile, key string) error {
 		return keychain.ErrProfileNameEmpty
 	}
 	service := getServiceName(profile)
-	err := p.store.Delete(service, key)
+	keys, err := p.store.List(service)
 	if err != nil {
-		return fmt.Errorf("error deleting key: %w", err)
+		return fmt.Errorf("error listing keys: %w", err)
+	}
+	for _, key := range keys {
+		err = p.store.Delete(service, key)
+		if err != nil {
+			return fmt.Errorf("error deleting key: %w", err)
+		}
+	}
+	err = p.recorder.Record(profile, "delete-profile", "", "")
+	if err != nil {
+		return fmt.Errorf("error recording operation: %w", err)
 	}
 	return nil
 }
@@ -157,11 +167,18 @@ func (p *ProfileService) Copy(srcProfile, dstProfile string) error {
 		}
 		err = p.store.Write(dstService, key, value)
 		if err != nil {
-			return fmt.Errorf("error copying key %s", key)
+			return fmt.Errorf("error copying key %s: %w", key, err)
 		}
-		err = p.recorder.Record(dstProfile, history.OpSet, key, "")
+
+		hash, err := p.hashValue(value)
+		if err != nil {
+			return fmt.Errorf("error hashing value for key %s: %w", key, err)
+		}
+
+		err = p.recorder.Record(dstProfile, history.OpSet, key, hash)
 		if err != nil {
 			return fmt.Errorf("error recording operation for key %s: %w", key, err)
 		}
 	}
+	return nil
 }
