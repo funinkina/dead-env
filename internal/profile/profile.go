@@ -139,3 +139,29 @@ func (p *ProfileService) Delete(profile, key string) error {
 	}
 	return nil
 }
+
+func (p *ProfileService) Copy(srcProfile, dstProfile string) error {
+	if srcProfile == "" || dstProfile == "" {
+		return keychain.ErrProfileNameEmpty
+	}
+	srcService := getServiceName(srcProfile)
+	dstService := getServiceName(dstProfile)
+	keys, err := p.store.List(srcService)
+	if err != nil {
+		return fmt.Errorf("error listing keys: %w", err)
+	}
+	for _, key := range keys {
+		value, err := p.store.Read(srcService, key, "")
+		if err != nil {
+			return fmt.Errorf("error reading key %s: %w", key, err)
+		}
+		err = p.store.Write(dstService, key, value)
+		if err != nil {
+			return fmt.Errorf("error copying key %s", key)
+		}
+		err = p.recorder.Record(dstProfile, history.OpSet, key, "")
+		if err != nil {
+			return fmt.Errorf("error recording operation for key %s: %w", key, err)
+		}
+	}
+}
