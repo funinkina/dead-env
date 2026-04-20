@@ -128,7 +128,7 @@ func (p *ProfileService) Create(profile string, pairs []keychain.EnvPair) error 
 	return nil
 }
 
-func (p *ProfileService) Delete(profile, key string) error {
+func (p *ProfileService) Delete(profile string) error {
 	if profile == "" {
 		return keychain.ErrProfileNameEmpty
 	}
@@ -179,6 +179,21 @@ func (p *ProfileService) Copy(srcProfile, dstProfile string) error {
 		if err != nil {
 			return fmt.Errorf("error recording operation for key %s: %w", key, err)
 		}
+	}
+	return nil
+}
+
+func (p *ProfileService) Rename(srcProfile, dstProfile string) error {
+	if srcProfile == "" || dstProfile == "" {
+		return keychain.ErrProfileNameEmpty
+	}
+	err := p.Copy(srcProfile, dstProfile)
+	if err != nil {
+		return fmt.Errorf("error renaming profile: %w", err)
+	}
+	err = p.Delete(srcProfile)
+	if err != nil {
+		return fmt.Errorf("error renaming profile: %w", err)
 	}
 	return nil
 }
