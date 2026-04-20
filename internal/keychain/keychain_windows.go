@@ -15,7 +15,6 @@ const windowsCredentialBlobLimit = 2560
 
 type windowsStore struct{}
 
-// New returns the Windows Credential Manager backend.
 func New() (Store, error) {
 	return &windowsStore{}, nil
 }

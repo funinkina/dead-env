@@ -198,8 +198,7 @@ func linuxSecretServiceError(action string, err error) error {
 		return nil
 	}
 
-	var dismissed secretservice.PromptDismissedError
-	if errors.As(err, &dismissed) {
+	if _, ok := errors.AsType[secretservice.PromptDismissedError](err); ok {
 		return fmt.Errorf("%w: %s", ErrAuthDenied, action)
 	}
 
