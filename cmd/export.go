@@ -85,6 +85,10 @@ func NewExportCommand() *cli.Command {
 			}
 
 			if outPath != "" {
+				if !strings.HasSuffix(outPath, ".deadenv") {
+					outPath = outPath + ".deadenv"
+				}
+
 				if err := exportProfileToFile(profileName, pairs, outPath); err != nil {
 					return err
 				}

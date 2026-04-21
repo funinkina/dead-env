@@ -144,8 +144,8 @@ deadenv run myapp -- ./my-binary --config=prod
 ### 4. Export for Teammates
 
 ```bash
-# Export the profile encrypted
-deadenv export myapp --out=myapp.deadenv
+# Export the profile encrypted (.deadenv extension added automatically)
+deadenv export myapp --out=myapp
 
 # Share myapp.deadenv and the sharing password via separate channels
 # Your teammate imports with:
@@ -359,10 +359,14 @@ source ./env.sh
 
 #### `deadenv export <profile> --out=<file>`
 
-Create an encrypted `.deadenv` export file (portable format for sharing).
+Create an encrypted `.deadenv` export file (portable format for sharing). The `.deadenv` extension is added automatically if not provided.
 
 ```bash
-# Export as encrypted file
+# Export as encrypted file (extension added automatically)
+deadenv export myapp --out=myapp
+
+# Both of these work:
+deadenv export myapp --out=myapp
 deadenv export myapp --out=myapp.deadenv
 
 # You will be prompted for a sharing password (separate from OS auth)
@@ -498,8 +502,8 @@ npm start
 
 **Team Lead:**
 ```bash
-# Export the profile
-deadenv export myapp --out=myapp.deadenv
+# Export the profile (.deadenv extension added automatically)
+deadenv export myapp --out=myapp
 
 # Share the file via any channel (it's encrypted)
 # Share the password via a separate, secure channel (Signal, 1Password, etc.)
