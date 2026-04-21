@@ -27,7 +27,6 @@ func setup() (*ProfileService, keychain.Store, *FakeRecorder) {
 	fakerecorder := &FakeRecorder{}
 
 	profileservice, _ := NewProfileService(fakestore, fakerecorder, nil)
-	// ⚠️ (optional improvement): you may want to check error instead of ignoring it
 
 	return profileservice, fakestore, fakerecorder
 }
