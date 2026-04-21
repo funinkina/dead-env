@@ -349,6 +349,244 @@ func TestProfileListReturnsUnderlyingError(t *testing.T) {
 	}
 }
 
+func TestProfileShowMasksValuesByDefault(t *testing.T) {
+	oldNewProfileService := newProfileService
+	defer func() {
+		newProfileService = oldNewProfileService
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	if err := service.SetKey("myapp", "API_KEY", "secret1234"); err != nil {
+		t.Fatalf("SetKey() error = %v", err)
+	}
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "show", "myapp"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+}
+
+func TestProfileShowRevealDisplaysPlaintext(t *testing.T) {
+	oldNewProfileService := newProfileService
+	defer func() {
+		newProfileService = oldNewProfileService
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	if err := service.SetKey("myapp", "API_KEY", "secret1234"); err != nil {
+		t.Fatalf("SetKey() error = %v", err)
+	}
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "show", "myapp", "--reveal"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+}
+
+func TestProfileDisplayValue(t *testing.T) {
+	masked := profileDisplayValue("secret1234", false)
+	if masked != "******1234" {
+		t.Fatalf("masked value = %q, want %q", masked, "******1234")
+	}
+
+	revealed := profileDisplayValue("secret1234", true)
+	if revealed != "secret1234" {
+		t.Fatalf("revealed value = %q, want %q", revealed, "secret1234")
+	}
+
+}
+
+func TestProfileDeleteRequiresConfirmation(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldPromptConfirm := promptConfirm
+	defer func() {
+		newProfileService = oldNewProfileService
+		promptConfirm = oldPromptConfirm
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	if err := service.SetKey("myapp", "API_KEY", "secret"); err != nil {
+		t.Fatalf("SetKey() error = %v", err)
+	}
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+	promptConfirm = func(message string) (bool, error) {
+		if !strings.Contains(message, "Delete profile") {
+			t.Fatalf("unexpected message: %q", message)
+		}
+		return false, nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "delete", "myapp"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	value, readErr := store.Read("deadenv/myapp", "API_KEY", "")
+	if readErr != nil {
+		t.Fatalf("Read() error = %v", readErr)
+	}
+	if value != "secret" {
+		t.Fatalf("value = %q, want %q", value, "secret")
+	}
+}
+
+func TestProfileDeleteYesDeletesProfile(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldPromptConfirm := promptConfirm
+	defer func() {
+		newProfileService = oldNewProfileService
+		promptConfirm = oldPromptConfirm
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	if err := service.SetKey("myapp", "API_KEY", "secret"); err != nil {
+		t.Fatalf("SetKey() error = %v", err)
+	}
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+	promptConfirm = func(message string) (bool, error) {
+		t.Fatalf("promptConfirm should not be called when --yes is set (message=%q)", message)
+		return false, nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "delete", "myapp", "--yes"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	_, readErr := store.Read("deadenv/myapp", "API_KEY", "")
+	if !errors.Is(readErr, keychain.ErrKeyNotFound) {
+		t.Fatalf("Read() error = %v, want ErrKeyNotFound", readErr)
+	}
+}
+
+func TestProfileDeleteAliasRm(t *testing.T) {
+	oldNewProfileService := newProfileService
+	defer func() {
+		newProfileService = oldNewProfileService
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	if err := service.SetKey("myapp", "API_KEY", "secret"); err != nil {
+		t.Fatalf("SetKey() error = %v", err)
+	}
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "rm", "myapp", "--yes"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+}
+
+func TestProfileRenameMovesKeys(t *testing.T) {
+	oldNewProfileService := newProfileService
+	defer func() {
+		newProfileService = oldNewProfileService
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	if err := service.SetKey("source", "API_KEY", "secret"); err != nil {
+		t.Fatalf("SetKey() error = %v", err)
+	}
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "rename", "source", "dest"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	_, oldErr := store.Read("deadenv/source", "API_KEY", "")
+	if !errors.Is(oldErr, keychain.ErrKeyNotFound) {
+		t.Fatalf("old profile key should be missing, got err=%v", oldErr)
+	}
+
+	v, newErr := store.Read("deadenv/dest", "API_KEY", "")
+	if newErr != nil {
+		t.Fatalf("Read(dest) error = %v", newErr)
+	}
+	if v != "secret" {
+		t.Fatalf("value = %q, want %q", v, "secret")
+	}
+}
+
+func TestProfileCopyPreservesSourceAndCreatesDestination(t *testing.T) {
+	oldNewProfileService := newProfileService
+	defer func() {
+		newProfileService = oldNewProfileService
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+
+	if err := service.SetKey("source", "API_KEY", "secret"); err != nil {
+		t.Fatalf("SetKey() error = %v", err)
+	}
+
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "copy", "source", "dest"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	srcValue, srcErr := store.Read("deadenv/source", "API_KEY", "")
+	if srcErr != nil {
+		t.Fatalf("Read(source) error = %v", srcErr)
+	}
+	if srcValue != "secret" {
+		t.Fatalf("source value = %q, want %q", srcValue, "secret")
+	}
+
+	dstValue, dstErr := store.Read("deadenv/dest", "API_KEY", "")
+	if dstErr != nil {
+		t.Fatalf("Read(dest) error = %v", dstErr)
+	}
+	if dstValue != "secret" {
+		t.Fatalf("dest value = %q, want %q", dstValue, "secret")
+	}
+}
+
 func mustProfileService(t *testing.T, store keychain.Store) *profile.ProfileService {
 	t.Helper()
 

@@ -17,8 +17,20 @@ var (
 	loadPairsFromFile   = profile.FromFile
 	loadPairsFromEditor = profile.FromEditor
 	listProfiles        = func(service *profile.ProfileService) ([]string, error) { return service.ListProfiles() }
-	promptConfirm       = tui.PromptConfirm
-	printPairSummary    = tui.PrintPairSummary
+	getProfilePairs     = func(service *profile.ProfileService, profileName string) ([]envPair.EnvPair, error) {
+		return service.GetPairs(profileName)
+	}
+	deleteProfile = func(service *profile.ProfileService, profileName string) error {
+		return service.Delete(profileName)
+	}
+	renameProfile = func(service *profile.ProfileService, oldName, newName string) error {
+		return service.Rename(oldName, newName)
+	}
+	copyProfile = func(service *profile.ProfileService, srcName, dstName string) error {
+		return service.Copy(srcName, dstName)
+	}
+	promptConfirm    = tui.PromptConfirm
+	printPairSummary = tui.PrintPairSummary
 )
 
 func NewProfileCommand() *cli.Command {
@@ -31,6 +43,163 @@ func NewProfileCommand() *cli.Command {
 		Commands: []*cli.Command{
 			newProfileListCommand(),
 			newProfileNewCommand(),
+			newProfileShowCommand(),
+			newProfileDeleteCommand(),
+			newProfileRenameCommand(),
+			newProfileCopyCommand(),
+		},
+	}
+}
+
+func newProfileShowCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "show",
+		Usage:     "Show profile keys with masked values by default",
+		ArgsUsage: "<name>",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "reveal",
+				Usage: "Reveal plaintext values",
+			},
+		},
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			profileName := strings.TrimSpace(cmd.Args().First())
+			if profileName == "" {
+				return fmt.Errorf("profile name is required")
+			}
+
+			service, err := newProfileService()
+			if err != nil {
+				return err
+			}
+
+			pairs, err := getProfilePairs(service, profileName)
+			if err != nil {
+				return fmt.Errorf("showing profile %q: %w", profileName, err)
+			}
+
+			if len(pairs) == 0 {
+				_, _ = fmt.Fprintf(commandWriter(cmd), "Profile %q has no keys.\n", profileName)
+				return nil
+			}
+
+			reveal := cmd.Bool("reveal")
+			for _, pair := range pairs {
+				value := profileDisplayValue(pair.Value, reveal)
+				_, _ = fmt.Fprintf(commandWriter(cmd), "%s=%s\n", pair.Key, value)
+			}
+
+			return nil
+		},
+	}
+}
+
+func profileDisplayValue(value string, reveal bool) string {
+	if reveal {
+		return value
+	}
+
+	return tui.MaskValue(value)
+}
+
+func newProfileDeleteCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "delete",
+		Aliases:   []string{"rm"},
+		Usage:     "Delete a profile and all its keys",
+		ArgsUsage: "<name>",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "yes",
+				Aliases: []string{"y"},
+				Usage:   "Delete profile without confirmation",
+			},
+		},
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			profileName := strings.TrimSpace(cmd.Args().First())
+			if profileName == "" {
+				return fmt.Errorf("profile name is required")
+			}
+
+			service, err := newProfileService()
+			if err != nil {
+				return err
+			}
+
+			if !cmd.Bool("yes") {
+				ok, err := promptConfirm(fmt.Sprintf("Delete profile %q and all keys?", profileName))
+				if err != nil {
+					return fmt.Errorf("confirming profile deletion: %w", err)
+				}
+
+				if !ok {
+					_, _ = fmt.Fprintln(commandWriter(cmd), "Deletion cancelled.")
+					return nil
+				}
+			}
+
+			if err := deleteProfile(service, profileName); err != nil {
+				return fmt.Errorf("deleting profile %q: %w", profileName, err)
+			}
+
+			_, _ = fmt.Fprintf(commandWriter(cmd), "Profile %q deleted.\n", profileName)
+			return nil
+		},
+	}
+}
+
+func newProfileRenameCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "rename",
+		Usage:     "Rename a profile",
+		ArgsUsage: "<old> <new>",
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			oldName := strings.TrimSpace(cmd.Args().Get(0))
+			newName := strings.TrimSpace(cmd.Args().Get(1))
+
+			if oldName == "" || newName == "" {
+				return fmt.Errorf("both old and new profile names are required")
+			}
+
+			service, err := newProfileService()
+			if err != nil {
+				return err
+			}
+
+			if err := renameProfile(service, oldName, newName); err != nil {
+				return fmt.Errorf("renaming profile %q to %q: %w", oldName, newName, err)
+			}
+
+			_, _ = fmt.Fprintf(commandWriter(cmd), "Profile %q renamed to %q.\n", oldName, newName)
+			return nil
+		},
+	}
+}
+
+func newProfileCopyCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "copy",
+		Usage:     "Copy a profile",
+		ArgsUsage: "<src> <dst>",
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			srcName := strings.TrimSpace(cmd.Args().Get(0))
+			dstName := strings.TrimSpace(cmd.Args().Get(1))
+
+			if srcName == "" || dstName == "" {
+				return fmt.Errorf("both source and destination profile names are required")
+			}
+
+			service, err := newProfileService()
+			if err != nil {
+				return err
+			}
+
+			if err := copyProfile(service, srcName, dstName); err != nil {
+				return fmt.Errorf("copying profile %q to %q: %w", srcName, dstName, err)
+			}
+
+			_, _ = fmt.Fprintf(commandWriter(cmd), "Profile %q copied to %q.\n", srcName, dstName)
+			return nil
 		},
 	}
 }
