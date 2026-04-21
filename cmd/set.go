@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"funinkina/deadenv/internal/tui"
+	"github.com/funinkina/deadenv/internal/tui"
 
 	"github.com/urfave/cli/v3"
 )

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"funinkina/deadenv/internal/envPair"
-	"funinkina/deadenv/internal/parser"
+	"github.com/funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/parser"
 )
 
 func TestEditorTemplateIncludesFormatGuide(t *testing.T) {

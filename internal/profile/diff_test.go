@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/envPair"
 )
 
 func TestDiffPairs(t *testing.T) {

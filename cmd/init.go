@@ -7,9 +7,9 @@ import (
 	"io"
 	"os"
 
-	"funinkina/deadenv/internal/history"
-	"funinkina/deadenv/internal/keychain"
-	"funinkina/deadenv/internal/profile"
+	"github.com/funinkina/deadenv/internal/history"
+	"github.com/funinkina/deadenv/internal/keychain"
+	"github.com/funinkina/deadenv/internal/profile"
 
 	"github.com/urfave/cli/v3"
 )

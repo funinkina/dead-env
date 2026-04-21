@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/envPair"
 
 	"golang.org/x/term"
 )

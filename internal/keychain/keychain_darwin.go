@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"funinkina/deadenv/internal/keychain/gokeychain"
+	"github.com/funinkina/deadenv/internal/keychain/gokeychain"
 )
 
 type darwinStore struct{}

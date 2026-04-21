@@ -11,7 +11,7 @@ import (
 func NewHistoryCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "history",
-		Usage:    "Show profile change history",
+		Usage:     "Show profile change history",
 		ArgsUsage: "<profile>",
 		Flags: []cli.Flag{
 			&cli.StringFlag{

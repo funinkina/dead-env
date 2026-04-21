@@ -3,7 +3,7 @@ package profile
 import (
 	"sort"
 
-	"funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/envPair"
 )
 
 type PairDiff struct {

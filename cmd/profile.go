@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"funinkina/deadenv/internal/envPair"
-	"funinkina/deadenv/internal/profile"
-	"funinkina/deadenv/internal/tui"
+	"github.com/funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/profile"
+	"github.com/funinkina/deadenv/internal/tui"
 
 	"github.com/urfave/cli/v3"
 )

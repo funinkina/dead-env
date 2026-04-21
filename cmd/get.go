@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"funinkina/deadenv/internal/keychain"
-	"funinkina/deadenv/internal/tui"
+	"github.com/funinkina/deadenv/internal/keychain"
+	"github.com/funinkina/deadenv/internal/tui"
 
 	"github.com/urfave/cli/v3"
 )

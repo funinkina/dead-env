@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"funinkina/deadenv/cmd"
-	"funinkina/deadenv/internal/crypto"
-	"funinkina/deadenv/internal/keychain"
-	"funinkina/deadenv/internal/profile"
+	"github.com/funinkina/deadenv/cmd"
+	"github.com/funinkina/deadenv/internal/crypto"
+	"github.com/funinkina/deadenv/internal/keychain"
+	"github.com/funinkina/deadenv/internal/profile"
 )
 
 func main() {

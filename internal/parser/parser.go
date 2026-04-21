@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	env "funinkina/deadenv/internal/envPair"
+	env "github.com/funinkina/deadenv/internal/envPair"
 )
 
 var keyRegex = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)

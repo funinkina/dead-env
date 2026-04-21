@@ -1,4 +1,4 @@
-module funinkina/deadenv
+module github.com/funinkina/deadenv
 
 go 1.26.2
 

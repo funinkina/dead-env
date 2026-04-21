@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/envPair"
 )
 
 const editorHeaderTemplate = `# deadenv profile: %s

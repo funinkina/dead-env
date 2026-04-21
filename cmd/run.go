@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"funinkina/deadenv/internal/profile"
+	"github.com/funinkina/deadenv/internal/profile"
 
 	"github.com/urfave/cli/v3"
 )

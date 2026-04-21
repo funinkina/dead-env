@@ -1,9 +1,10 @@
 package parser
 
 import (
-	env "funinkina/deadenv/internal/envPair"
 	"reflect"
 	"testing"
+
+	env "github.com/funinkina/deadenv/internal/envPair"
 )
 
 func TestParseEnvContent(t *testing.T) {

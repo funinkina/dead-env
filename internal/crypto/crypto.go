@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/envPair"
 
 	"golang.org/x/crypto/argon2"
 )

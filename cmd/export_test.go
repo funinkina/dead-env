@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"funinkina/deadenv/internal/crypto"
-	"funinkina/deadenv/internal/envPair"
-	"funinkina/deadenv/internal/keychain"
-	"funinkina/deadenv/internal/profile"
+	"github.com/funinkina/deadenv/internal/crypto"
+	"github.com/funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/keychain"
+	"github.com/funinkina/deadenv/internal/profile"
 )
 
 func TestExportCommandShellFormat(t *testing.T) {

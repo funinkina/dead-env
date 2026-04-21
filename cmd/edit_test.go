@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"funinkina/deadenv/internal/keychain"
-	"funinkina/deadenv/internal/profile"
+	"github.com/funinkina/deadenv/internal/keychain"
+	"github.com/funinkina/deadenv/internal/profile"
 )
 
 func TestEditCommandRequiresProfileName(t *testing.T) {

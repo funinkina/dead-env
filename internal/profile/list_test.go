@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"funinkina/deadenv/internal/history"
-	"funinkina/deadenv/internal/keychain"
+	"github.com/funinkina/deadenv/internal/history"
+	"github.com/funinkina/deadenv/internal/keychain"
 )
 
 type storeWithoutProfileLister struct {

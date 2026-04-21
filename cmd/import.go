@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"funinkina/deadenv/internal/crypto"
-	"funinkina/deadenv/internal/envPair"
-	"funinkina/deadenv/internal/tui"
+	"github.com/funinkina/deadenv/internal/crypto"
+	"github.com/funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/tui"
 
 	"github.com/urfave/cli/v3"
 )

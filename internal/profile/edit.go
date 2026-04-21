@@ -6,8 +6,8 @@ import (
 	"os"
 	"sort"
 
-	"funinkina/deadenv/internal/envPair"
-	"funinkina/deadenv/internal/tui"
+	"github.com/funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/tui"
 )
 
 type EditOptions struct {

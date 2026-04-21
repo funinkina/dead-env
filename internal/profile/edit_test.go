@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"funinkina/deadenv/internal/envPair"
-	"funinkina/deadenv/internal/history"
-	"funinkina/deadenv/internal/keychain"
+	"github.com/funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/history"
+	"github.com/funinkina/deadenv/internal/keychain"
 )
 
 type flakyStore struct {

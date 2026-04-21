@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"funinkina/deadenv/internal/envPair"
-	"funinkina/deadenv/internal/parser"
+	"github.com/funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/parser"
 )
 
 type editorRunner func(path string) error

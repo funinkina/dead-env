@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/envPair"
 )
 
 func TestRenderShellSortsAndQuotesValues(t *testing.T) {

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"funinkina/deadenv/internal/envPair"
-	"funinkina/deadenv/internal/history"
-	"funinkina/deadenv/internal/keychain"
-	"funinkina/deadenv/internal/profile"
+	"github.com/funinkina/deadenv/internal/envPair"
+	"github.com/funinkina/deadenv/internal/history"
+	"github.com/funinkina/deadenv/internal/keychain"
+	"github.com/funinkina/deadenv/internal/profile"
 )
 
 func TestProfileNewFromFileCreatesProfile(t *testing.T) {

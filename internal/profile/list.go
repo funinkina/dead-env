@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"funinkina/deadenv/internal/history"
-	"funinkina/deadenv/internal/keychain"
+	"github.com/funinkina/deadenv/internal/history"
+	"github.com/funinkina/deadenv/internal/keychain"
 )
 
 func (p *ProfileService) ListProfiles() ([]string, error) {

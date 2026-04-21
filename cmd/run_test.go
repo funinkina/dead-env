@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"funinkina/deadenv/internal/keychain"
-	"funinkina/deadenv/internal/profile"
+	"github.com/funinkina/deadenv/internal/keychain"
+	"github.com/funinkina/deadenv/internal/profile"
 )
 
 func TestRunCommandRequiresProfile(t *testing.T) {
