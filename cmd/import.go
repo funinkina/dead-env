@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -68,11 +69,8 @@ func NewImportCommand() *cli.Command {
 			existingProfiles, listErr := service.ListProfiles()
 			profileExists := false
 			if listErr == nil {
-				for _, p := range existingProfiles {
-					if p == targetProfile {
-						profileExists = true
-						break
-					}
+				if slices.Contains(existingProfiles, targetProfile) {
+					profileExists = true
 				}
 			}
 

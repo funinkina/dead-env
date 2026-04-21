@@ -6,16 +6,16 @@ import (
 	"strings"
 )
 
-const servicePrefix = "deadenv/"
+const ServicePrefix = "deadenv/"
 
 var profileNameRE = regexp.MustCompile(`^[a-z0-9-]{1,64}$`)
 
 func profileFromService(service string) (string, error) {
-	if !strings.HasPrefix(service, servicePrefix) {
-		return "", fmt.Errorf("%w: expected %q prefix (got %q)", ErrInvalidService, servicePrefix, service)
+	if !strings.HasPrefix(service, ServicePrefix) {
+		return "", fmt.Errorf("%w: expected %q prefix (got %q)", ErrInvalidService, ServicePrefix, service)
 	}
 
-	profile := strings.TrimPrefix(service, servicePrefix)
+	profile := strings.TrimPrefix(service, ServicePrefix)
 	if !profileNameRE.MatchString(profile) {
 		return "", fmt.Errorf("%w: invalid profile name in service %q", ErrInvalidService, service)
 	}
@@ -33,7 +33,7 @@ func targetName(service, account string) (string, error) {
 		return "", err
 	}
 
-	return servicePrefix + profile + "/" + account, nil
+	return ServicePrefix + profile + "/" + account, nil
 }
 
 func validateAccount(account string) error {

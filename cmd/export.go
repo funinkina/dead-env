@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"funinkina/deadenv/internal/crypto"
@@ -54,13 +55,7 @@ func NewExportCommand() *cli.Command {
 
 			profiles, listErr := service.ListProfiles()
 			if listErr == nil {
-				found := false
-				for _, p := range profiles {
-					if p == profileName {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(profiles, profileName)
 				if !found {
 					return fmt.Errorf("profile %q not found. Create it with: deadenv profile new %s", profileName, profileName)
 				}

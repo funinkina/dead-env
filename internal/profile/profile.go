@@ -45,7 +45,7 @@ func NewProfileService(
 }
 
 func getServiceName(profile string) string {
-	return "deadenv/" + profile
+	return keychain.ServicePrefix + profile
 }
 
 func readPrompt(profile string) string {

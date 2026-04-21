@@ -18,7 +18,7 @@ const editorHeaderTemplate = `# deadenv profile: %s
 #   export KEY=VALUE
 #
 # Lines starting with # are ignored.
-# Save and close the editor to continue.
+# Add the values, save and close the editor to continue.
 
 `
 

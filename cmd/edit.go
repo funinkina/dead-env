@@ -59,8 +59,7 @@ func NewEditCommand() *cli.Command {
 				return nil
 			}
 
-			var partialErr *profile.PartialApplyError
-			if errors.As(err, &partialErr) {
+			if partialErr, ok := errors.AsType[*profile.PartialApplyError](err); ok {
 				return formatPartialApplyError(partialErr)
 			}
 
