@@ -1,2 +1,4 @@
 deadenv
 .codex
+# Added by goreleaser init:
+dist/
