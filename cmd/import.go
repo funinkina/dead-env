@@ -30,6 +30,11 @@ func NewImportCommand() *cli.Command {
 				Name:  "as",
 				Usage: "Override destination profile name",
 			},
+			&cli.BoolFlag{
+				Name:    "yes",
+				Aliases: []string{"y"},
+				Usage:   "Import without confirmation",
+			},
 		},
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			filePath := strings.TrimSpace(cmd.Args().First())
@@ -60,17 +65,35 @@ func NewImportCommand() *cli.Command {
 				return fmt.Errorf("profile name missing in import file; provide one with --as")
 			}
 
+			existingProfiles, listErr := service.ListProfiles()
+			profileExists := false
+			if listErr == nil {
+				for _, p := range existingProfiles {
+					if p == targetProfile {
+						profileExists = true
+						break
+					}
+				}
+			}
+
 			if err := printImportSummary(commandWriter(cmd), dedupePairsByKey(pairs)); err != nil {
 				return fmt.Errorf("printing key summary: %w", err)
 			}
 
-			ok, err := promptImportConfirm("Import profile with these keys?")
-			if err != nil {
-				return fmt.Errorf("confirming profile import: %w", err)
+			confirmMsg := "Import profile with these keys?"
+			if profileExists {
+				confirmMsg = fmt.Sprintf("Warning: profile %q already exists. Import will overwrite existing keys. %s", targetProfile, confirmMsg)
 			}
-			if !ok {
-				_, _ = fmt.Fprintln(commandWriter(cmd), "Import cancelled.")
-				return nil
+
+			if !cmd.Bool("yes") {
+				ok, err := promptImportConfirm(confirmMsg)
+				if err != nil {
+					return fmt.Errorf("confirming profile import: %w", err)
+				}
+				if !ok {
+					_, _ = fmt.Fprintln(commandWriter(cmd), "Import cancelled.")
+					return nil
+				}
 			}
 
 			if err := service.ReplaceProfile(targetProfile, pairs); err != nil {
