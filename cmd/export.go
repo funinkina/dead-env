@@ -40,21 +40,48 @@ func NewExportCommand() *cli.Command {
 				return fmt.Errorf("profile name is required")
 			}
 
-			service, err := newProfileService()
-			if err != nil {
-				return err
-			}
-
-			pairs, err := service.GetPairs(profileName)
-			if err != nil {
-				return err
-			}
-
 			outPath := strings.TrimSpace(cmd.String("out"))
 			format := strings.TrimSpace(cmd.String("format"))
 
 			if outPath != "" && format != "" {
 				return fmt.Errorf("--out and --format cannot be used together")
+			}
+
+			service, err := newProfileService()
+			if err != nil {
+				return err
+			}
+
+			profiles, listErr := service.ListProfiles()
+			if listErr == nil {
+				found := false
+				for _, p := range profiles {
+					if p == profileName {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("profile %q not found. Create it with: deadenv profile new %s", profileName, profileName)
+				}
+			}
+
+			keys, listKeysErr := service.ListKeys(profileName)
+			if listKeysErr != nil {
+				return fmt.Errorf("exporting profile %q: %w", profileName, listKeysErr)
+			}
+
+			if len(keys) == 0 {
+				return fmt.Errorf("profile %q has no keys", profileName)
+			}
+
+			pairs := make([]envPair.EnvPair, 0, len(keys))
+			for _, key := range keys {
+				val, getErr := service.GetKey(profileName, key)
+				if getErr != nil {
+					return fmt.Errorf("reading key %q from profile %q: %w", key, profileName, getErr)
+				}
+				pairs = append(pairs, envPair.EnvPair{Key: key, Value: val})
 			}
 
 			if outPath != "" {
