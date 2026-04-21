@@ -95,7 +95,7 @@ func (s *windowsStore) List(service string) ([]string, error) {
 		return nil, fmt.Errorf("listing windows credentials: %w", err)
 	}
 
-	prefix := servicePrefix + profile + "/"
+	prefix := ServicePrefix + profile + "/"
 	keys := make([]string, 0)
 	for _, cred := range creds {
 		if !strings.HasPrefix(cred.TargetName, prefix) {
@@ -123,11 +123,11 @@ func (s *windowsStore) ListProfiles() ([]string, error) {
 	seen := make(map[string]struct{})
 
 	for _, cred := range creds {
-		if !strings.HasPrefix(cred.TargetName, servicePrefix) {
+		if !strings.HasPrefix(cred.TargetName, ServicePrefix) {
 			continue
 		}
 
-		remainder := strings.TrimPrefix(cred.TargetName, servicePrefix)
+		remainder := strings.TrimPrefix(cred.TargetName, ServicePrefix)
 		profile, _, ok := strings.Cut(remainder, "/")
 		if !ok {
 			continue
