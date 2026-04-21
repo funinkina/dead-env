@@ -1,7 +1,8 @@
 package profile
 
 import (
-	"funinkina/deadenv/internal/keychain" // ✅ FIX: import keychain to use FakeStore
+	"funinkina/deadenv/internal/history"
+	"funinkina/deadenv/internal/keychain"
 	"testing"
 )
 
@@ -22,64 +23,69 @@ func (r *FakeRecorder) Record(profile, op, key, hash string) error {
 }
 
 func setup() (*ProfileService, keychain.Store, *FakeRecorder) {
-	// ✅ FIX: return keychain.Store instead of *FakeStore (interface-based)
-
 	fakestore := keychain.NewFake()
-	// ✅ FIX: correct constructor name (exported → NewFake, not newFake)
-
 	fakerecorder := &FakeRecorder{}
 
 	profileservice, _ := NewProfileService(fakestore, fakerecorder, nil)
-	// ✅ FIX: must call constructor, not struct literal
-	// also fixes hashValue being nil
+	// ⚠️ (optional improvement): you may want to check error instead of ignoring it
 
 	return profileservice, fakestore, fakerecorder
 }
 
 func TestSetKey(t *testing.T) {
-	tests := []struct{
-        name string
-        input string 
-        wantErr bool
-    } {
+	tests := []struct {
+		name    string
+		profile string
+		key     string
+		value   string
+		wantErr bool
+	}{
 		{
-			name: "valid input",
+			name:    "valid input",
 			profile: "myapp",
-			key: "API_KEY",
-			value: "123",
-			wantErr: false
+			key:     "API_KEY",
+			value:   "123",
+			wantErr: false,
 		},
 		{
-			name: "empty profile",
+			name:    "empty profile",
 			profile: "",
-			key: "API_KEY",
-			value: "123",
-			wantErr: true
+			key:     "API_KEY",
+			value:   "123",
+			wantErr: true,
 		},
 		{
-			name: "empty key",
+			name:    "empty key",
 			profile: "myapp",
-			key: "",
-			value: "123",
-			wantErr: true
-		}
+			key:     "",
+			value:   "123",
+			wantErr: true,
+		},
 	}
-	
+
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T){
+		t.Run(tt.name, func(t *testing.T) {
 			profileservice, fakestore, fakerecorder := setup()
+
 			err := profileservice.SetKey(tt.profile, tt.key, tt.value)
-			if err != nil {
-				t.Fatalf("SetKey failed: %v", err)
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("error = %v, wantErr %v", err, tt.wantErr)
 			}
+
+			if tt.wantErr {
+				return
+			}
+
 			service := getServiceName(tt.profile)
+
 			value, err := fakestore.Read(service, tt.key, "")
 			if err != nil {
 				t.Fatalf("Read failed: %v", err)
 			}
 
 			if value != tt.value {
-				t.Fatalf("expected value %w, got '%s'", tt.value, value)
+				t.Fatalf("expected value %s, got '%s'", tt.value, value)
 			}
 
 			if len(fakerecorder.entries) != 1 {
@@ -88,7 +94,7 @@ func TestSetKey(t *testing.T) {
 
 			entry := fakerecorder.entries[0]
 
-			if entry.profile != tt.profile || entry.op != "set" || entry.key != tt.key {
+			if entry.profile != tt.profile || entry.op != history.OpSet || entry.key != tt.key {
 				t.Fatalf("unexpected recorder entry: %+v", entry)
 			}
 
