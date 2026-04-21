@@ -31,6 +31,8 @@ func NewRootCommand() *cli.Command {
 			NewEditCommand(),
 			NewExportCommand(),
 			NewImportCommand(),
+			NewRunCommand(),
+			NewInitCommand(),
 		},
 	}
 }
