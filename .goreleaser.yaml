@@ -45,6 +45,6 @@ changelog:
 release:
   github:
     owner: funinkina
-    name: deadenv
+    name: dead-env
   draft: false
   prerelease: auto
