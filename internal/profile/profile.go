@@ -2,10 +2,11 @@ package profile
 
 import (
 	"fmt"
+	"sort"
+
 	"funinkina/deadenv/internal/envPair"
 	"funinkina/deadenv/internal/history"
 	"funinkina/deadenv/internal/keychain"
-	"sort"
 )
 
 type HashFunc func(value string) (string, error)
@@ -270,4 +271,11 @@ func (p *ProfileService) Rename(srcProfile, dstProfile string) error {
 		return fmt.Errorf("error renaming profile: %w", err)
 	}
 	return nil
+}
+
+func (p *ProfileService) GetHistory(profile, key string) ([]history.HistoryEntry, error) {
+	if profile == "" {
+		return nil, ErrProfileNameEmpty
+	}
+	return p.recorder.Log(profile, key)
 }

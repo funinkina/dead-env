@@ -14,6 +14,11 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+var globalConfigDir string
+var globalNoHistory bool
+var globalQuiet bool
+var globalYes bool
+
 var (
 	newProfileService = defaultProfileService
 	gitWarningPrinted bool
@@ -23,15 +28,42 @@ func NewRootCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "deadenv",
 		Usage: "Dead simple and secure way to manage your .env",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "config",
+				Usage:       "Override config directory",
+				Destination: &globalConfigDir,
+			},
+			&cli.BoolFlag{
+				Name:        "no-history",
+				Usage:       "Skip git history commit for this operation",
+				Destination: &globalNoHistory,
+			},
+			&cli.BoolFlag{
+				Name:        "quiet",
+				Usage:       "Suppress informational output",
+				Destination: &globalQuiet,
+			},
+			&cli.BoolFlag{
+				Name:        "yes",
+				Aliases:     []string{"y"},
+				Usage:       "Skip confirmation prompts",
+				Destination: &globalYes,
+			},
+		},
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			return cli.ShowRootCommandHelp(cmd)
 		},
 		Commands: []*cli.Command{
 			NewProfileCommand(),
+			NewSetCommand(),
+			NewGetCommand(),
+			NewUnsetCommand(),
 			NewEditCommand(),
 			NewExportCommand(),
 			NewImportCommand(),
 			NewRunCommand(),
+			NewHistoryCommand(),
 			NewInitCommand(),
 		},
 	}

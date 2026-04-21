@@ -83,10 +83,13 @@ func newProfileShowCommand() *cli.Command {
 				return nil
 			}
 
+			_, _ = fmt.Fprintf(commandWriter(cmd), "Profile: %s\n", profileName)
+			_, _ = fmt.Fprintln(commandWriter(cmd), strings.Repeat("─", 40))
+
 			reveal := cmd.Bool("reveal")
 			for _, pair := range pairs {
 				value := profileDisplayValue(pair.Value, reveal)
-				_, _ = fmt.Fprintf(commandWriter(cmd), "%s=%s\n", pair.Key, value)
+				_, _ = fmt.Fprintf(commandWriter(cmd), "  %s  %s\n", pair.Key, value)
 			}
 
 			return nil
@@ -225,8 +228,9 @@ func newProfileListCommand() *cli.Command {
 				return nil
 			}
 
+			_, _ = fmt.Fprintln(commandWriter(cmd), "Profiles:")
 			for _, profileName := range profiles {
-				_, _ = fmt.Fprintln(commandWriter(cmd), profileName)
+				_, _ = fmt.Fprintf(commandWriter(cmd), "  • %s\n", profileName)
 			}
 
 			return nil
