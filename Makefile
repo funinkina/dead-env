@@ -1,7 +1,7 @@
 .PHONY: build test lint fuzz integration clean
 
 build:
-	go build -o bin/deadenv ./...
+	go build -o bin/deadenv .
 
 test:
 	go test -race ./...
