@@ -234,6 +234,121 @@ func TestProfileNewGivesEditorHint(t *testing.T) {
 	}
 }
 
+func TestProfileListUsesServiceListProfiles(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldListProfiles := listProfiles
+	defer func() {
+		newProfileService = oldNewProfileService
+		listProfiles = oldListProfiles
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	called := false
+	listProfiles = func(svc *profile.ProfileService) ([]string, error) {
+		called = true
+		if svc == nil {
+			t.Fatal("service is nil")
+		}
+		return []string{"alpha", "beta"}, nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "list"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if !called {
+		t.Fatal("listProfiles was not called")
+	}
+}
+
+func TestProfileListAliasLs(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldListProfiles := listProfiles
+	defer func() {
+		newProfileService = oldNewProfileService
+		listProfiles = oldListProfiles
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	called := false
+	listProfiles = func(svc *profile.ProfileService) ([]string, error) {
+		called = true
+		_ = svc
+		return []string{"alpha"}, nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "ls"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if !called {
+		t.Fatal("listProfiles was not called")
+	}
+}
+
+func TestProfileListNoProfilesIsSuccess(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldListProfiles := listProfiles
+	defer func() {
+		newProfileService = oldNewProfileService
+		listProfiles = oldListProfiles
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	listProfiles = func(_ *profile.ProfileService) ([]string, error) {
+		return []string{}, nil
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "list"})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+}
+
+func TestProfileListReturnsUnderlyingError(t *testing.T) {
+	oldNewProfileService := newProfileService
+	oldListProfiles := listProfiles
+	defer func() {
+		newProfileService = oldNewProfileService
+		listProfiles = oldListProfiles
+	}()
+
+	store := keychain.NewFake()
+	service := mustProfileService(t, store)
+	newProfileService = func() (*profile.ProfileService, error) {
+		return service, nil
+	}
+
+	wantErr := errors.New("boom")
+	listProfiles = func(_ *profile.ProfileService) ([]string, error) {
+		return nil, wantErr
+	}
+
+	root := NewRootCommand()
+	err := root.Run(context.Background(), []string{"deadenv", "profile", "list"})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("Run() error = %v, want %v", err, wantErr)
+	}
+}
+
 func mustProfileService(t *testing.T, store keychain.Store) *profile.ProfileService {
 	t.Helper()
 

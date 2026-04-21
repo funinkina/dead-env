@@ -159,6 +159,43 @@ func (s *linuxStore) List(service string) ([]string, error) {
 	return keys, nil
 }
 
+func (s *linuxStore) ListProfiles() ([]string, error) {
+	svc, err := s.newService()
+	if err != nil {
+		return nil, linuxSecretServiceError("opening secret service connection", err)
+	}
+
+	items, err := svc.SearchCollection(secretservice.DefaultCollection, secretservice.Attributes{
+		linuxSecretAttributeApplication: linuxSecretApplicationName,
+	})
+	if err != nil {
+		return nil, linuxSecretServiceError("listing profiles", err)
+	}
+
+	profiles := make([]string, 0, len(items))
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		attributes, attrErr := svc.GetAttributes(item)
+		if attrErr != nil {
+			return nil, linuxSecretServiceError("listing profiles", attrErr)
+		}
+
+		profile := strings.TrimSpace(attributes[linuxSecretAttributeProfile])
+		if profile == "" {
+			continue
+		}
+		if _, exists := seen[profile]; exists {
+			continue
+		}
+
+		seen[profile] = struct{}{}
+		profiles = append(profiles, profile)
+	}
+
+	sort.Strings(profiles)
+	return profiles, nil
+}
+
 func (s *linuxStore) openSession() (*secretservice.SecretService, *secretservice.Session, error) {
 	svc, err := s.newService()
 	if err != nil {

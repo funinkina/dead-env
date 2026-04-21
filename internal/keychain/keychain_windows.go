@@ -112,3 +112,40 @@ func (s *windowsStore) List(service string) ([]string, error) {
 	sort.Strings(keys)
 	return keys, nil
 }
+
+func (s *windowsStore) ListProfiles() ([]string, error) {
+	creds, err := wincred.List()
+	if err != nil {
+		return nil, fmt.Errorf("listing windows credentials: %w", err)
+	}
+
+	profiles := make([]string, 0)
+	seen := make(map[string]struct{})
+
+	for _, cred := range creds {
+		if !strings.HasPrefix(cred.TargetName, servicePrefix) {
+			continue
+		}
+
+		remainder := strings.TrimPrefix(cred.TargetName, servicePrefix)
+		profile, _, ok := strings.Cut(remainder, "/")
+		if !ok {
+			continue
+		}
+
+		profile = strings.TrimSpace(profile)
+		if profile == "" {
+			continue
+		}
+
+		if _, exists := seen[profile]; exists {
+			continue
+		}
+
+		seen[profile] = struct{}{}
+		profiles = append(profiles, profile)
+	}
+
+	sort.Strings(profiles)
+	return profiles, nil
+}

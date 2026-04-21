@@ -81,3 +81,29 @@ func (f *FakeStore) List(service string) ([]string, error) {
 
 	return keys, nil
 }
+
+func (f *FakeStore) ListProfiles() ([]string, error) {
+	if f.Err != nil {
+		return nil, f.Err
+	}
+
+	profiles := make([]string, 0)
+	seen := make(map[string]struct{}, len(f.data))
+
+	for service := range f.data {
+		profile, err := profileFromService(service)
+		if err != nil {
+			continue
+		}
+
+		if _, ok := seen[profile]; ok {
+			continue
+		}
+
+		seen[profile] = struct{}{}
+		profiles = append(profiles, profile)
+	}
+
+	sort.Strings(profiles)
+	return profiles, nil
+}

@@ -16,6 +16,7 @@ import (
 var (
 	loadPairsFromFile   = profile.FromFile
 	loadPairsFromEditor = profile.FromEditor
+	listProfiles        = func(service *profile.ProfileService) ([]string, error) { return service.ListProfiles() }
 	promptConfirm       = tui.PromptConfirm
 	printPairSummary    = tui.PrintPairSummary
 )
@@ -28,7 +29,38 @@ func NewProfileCommand() *cli.Command {
 			return cli.ShowSubcommandHelp(cmd)
 		},
 		Commands: []*cli.Command{
+			newProfileListCommand(),
 			newProfileNewCommand(),
+		},
+	}
+}
+
+func newProfileListCommand() *cli.Command {
+	return &cli.Command{
+		Name:    "list",
+		Aliases: []string{"ls"},
+		Usage:   "List profiles",
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			service, err := newProfileService()
+			if err != nil {
+				return err
+			}
+
+			profiles, err := listProfiles(service)
+			if err != nil {
+				return fmt.Errorf("listing profiles: %w", err)
+			}
+
+			if len(profiles) == 0 {
+				_, _ = fmt.Fprintln(commandWriter(cmd), "No profiles found.")
+				return nil
+			}
+
+			for _, profileName := range profiles {
+				_, _ = fmt.Fprintln(commandWriter(cmd), profileName)
+			}
+
+			return nil
 		},
 	}
 }

@@ -11,3 +11,11 @@ type Store interface {
 	// List returns all accounts stored under a service.
 	List(service string) ([]string, error)
 }
+
+// ProfileLister is an optional capability for listing available profile names.
+//
+// Implementations may return profile names sourced from the underlying keychain.
+// Callers should gracefully fall back when Store does not implement this interface.
+type ProfileLister interface {
+	ListProfiles() ([]string, error)
+}
